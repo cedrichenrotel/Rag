@@ -12,7 +12,7 @@ class RagCli:
 
     def search(self, query: str, k: int = 10):
         """permet de retourner les k meilleurs chunk du
-        classement.
+        classement d'une question.
             args:
                 - query -> questions posee
                 - k -> nombre de chunk"""
@@ -27,13 +27,13 @@ class RagCli:
             args:
                 - dataset_path -> chemin du fichier JSON contenant
                   les questions
-                - save_directory -> document est stocker le fichier
-                  des reponses
+                - save_directory -> dossier ou est stocker le fichier
+                  resultat de recherche
                 - k -> nombre de chunk a retourner par question"""
 
     def answer(self, query: str, k: int = 10):
-        """retourne les k meilleurs chunk et l'envois au model Qwen afin de
-        rediger une reponse en texte.
+        """retourne les k meilleurs chunk d'une question et l'envois
+        au model Qwen afin de rediger une reponse en texte.
             args:
                 - query -> question posee
                 - k -> nombre de chunk a retourner"""
@@ -41,13 +41,13 @@ class RagCli:
     def answer_dataset(
         self, student_search_results_path: str, save_directory: str
     ):
-        """redige les reponses de tous les un fichier de question et les
+        """redige les reponses de toutes les questions d'un fichier et les
         enregistre dans un fichier JSON (elle lis le fichier produit par
         search_dataset).
             args:
                 - student_search_results_path -> chemin du fichier JSON
                   produit par la fonction search_dataset
-                - save_directory -> document est stocker le fichier des
+                - save_directory -> dossier ou est stocker le fichier des
                   reponses"""
 
     def evaluate(self, student_search_results_path: str, dataset_path: str):
@@ -56,5 +56,5 @@ class RagCli:
             args:
                 - student_search_results_path -> chemin du fichier JSON
                   produit par la fonction search_dataset
-                - chemin du fichier JSON contenant
-                  les questions"""
+                - dataset_path -> chemin du fichier JSON corrige
+                (AnsweredQuestions))"""
