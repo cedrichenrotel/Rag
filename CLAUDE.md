@@ -161,10 +161,10 @@ on attend surtout qu'elles soient cohérentes, ancrées dans les sources, et qu'
 Coche au fur et à mesure. Claude : regarde où j'en suis avant de proposer la suite.
 
 ### Étape 0 — Mise en place
-- [ ] `uv init`, dépendances (pydantic, fire, tqdm, flake8, mypy…), `.gitignore`.
-- [ ] Créer l'arborescence `data/` et y déplacer corpus + datasets.
-- [ ] `src/__main__.py` + Fire : toutes les commandes existent (même vides).
-- [ ] `Makefile` complet.
+- [x] `uv init`, dépendances (pydantic, fire, tqdm, flake8, mypy…), `.gitignore`.
+- [x] Créer l'arborescence `data/` et y déplacer corpus + datasets.
+- [x] `src/__main__.py` + Fire : toutes les commandes existent (même vides).
+- [x] `Makefile` complet.
 
 ### Étape 1 — Modèles pydantic
 - [ ] Écrire les modèles du sujet, tester le chargement des JSON de `data/datasets/`.
@@ -209,4 +209,4 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 
 | Date | Étape | Ce qui a été fait | Recall@5 code | Recall@5 docs |
 |---|---|---|---|---|
-| | | | | |
+| 2026-10-05 | 0 | Mise en place : uv, arborescence `data/`, CLI Fire (6 commandes vides), Makefile, `.flake8`, `[tool.mypy]`. Reste : types de retour dans `rag_cli.py` (5 erreurs mypy) | – | – |

@@ -20,3 +20,6 @@ line-length = 79
 
 [tool.ruff.lint]
 ignore = ["SIM103", "RUF100"]
+
+[tool.mypy]
+  exclude = ["^data/"]
