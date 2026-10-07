@@ -167,12 +167,12 @@ Coche au fur et à mesure. Claude : regarde où j'en suis avant de proposer la s
 - [x] `Makefile` complet.
 
 ### Étape 1 — Modèles pydantic
-- [ ] Écrire les modèles du sujet, tester le chargement des JSON de `data/datasets/`.
+- [x] Écrire les modèles du sujet, tester le chargement des JSON de `data/datasets/`.
 
 ### Étape 2 — Lire le corpus et chunker
-- [ ] Parcourir `data/raw/`, garder les fichiers utiles (`.py`, `.md`, `.txt`…).
-- [ ] Lire **sans modifier le texte**, sinon les index de caractères seront décalés.
-- [ ] Chunking **Python** (par `def`/`class`, découpé si > max) et chunking **Markdown**
+- [x] Parcourir `data/raw/`, garder les fichiers utiles (`.py`, `.md`, `.txt`…).
+- [x] Lire **sans modifier le texte**, sinon les index de caractères seront décalés.
+- [x] Chunking **Python** (par `def`/`class`, découpé si > max) et chunking **Markdown**
   (par titres `#`, découpé si > max). Chaque chunk retient `file_path`, `start`, `end`, `text`.
 
 ### Étape 3 — Index lexical + sauvegarde
@@ -193,7 +193,7 @@ Coche au fur et à mesure. Claude : regarde où j'en suis avant de proposer la s
 ### Étape 6 — Robustesse + README
 - [ ] Tester tous les cas tordus (query vide, k=0, fichiers manquants, JSON cassé).
 - [ ] `make lint` propre.
-- [ ] `.gitignore` : ajouter `data/`, `moulinette/`, `en.subject_RAG.pdf` (reporté par choix ; d'ici là, pas de `git add .`).
+- [x] `.gitignore` : ajouter `data/`, `moulinette/`, `en.subject_RAG.pdf` (reporté par choix ; d'ici là, pas de `git add .`).
 - [ ] README **en anglais** : 1re ligne en italique *This project has been created as part of the 42 curriculum by <login>*,
   + Description, Instructions, Resources (+ usage de l'IA), System architecture, Chunking strategy,
   Retrieval method, Performance analysis, Design decisions, Challenges faced, Example usage.
@@ -210,3 +210,4 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 | Date | Étape | Ce qui a été fait | Recall@5 code | Recall@5 docs |
 |---|---|---|---|---|
 | 2026-10-05 | 0 | Mise en place : uv, arborescence `data/`, CLI Fire (6 commandes vides), Makefile, `.flake8`, `[tool.mypy]`. Reste : types de retour dans `rag_cli.py` (5 erreurs mypy) | – | – |
+| 2026-10-07 | 1-2 | Modèles pydantic (`model.py`). Chunking : `CutChunk.chunk_file` (coupe aux `#` pour md/txt, aux `def`/`class` pour py, recoupe à `max_chunk_size`), `ChunkCorpus.chunk_corpus` → 27 248 chunks sur 1 969 fichiers, max 2000 caractères | – | – |

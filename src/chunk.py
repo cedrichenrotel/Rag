@@ -73,19 +73,3 @@ class CutChunk:
             )
 
         return chunks
-
-
-if __name__ == "__main__":
-    cutchunk = CutChunk()
-
-    text = "import os\n\nclass Engine:\n    def start(self):\n        pass\n"
-    for c in cutchunk.chunk_file("test.py", text, 2000, ".py"):
-        print(c.first_character_index, c.last_character_index, repr(c.text))
-
-    text = "# A\n" + "a" * 100 + "\n# B\n" + "b" * 50
-    for c in cutchunk.chunk_file("test.md", text, 2000, ".md"):
-        print(
-            c.first_character_index, c.last_character_index, repr(c.text[:8])
-        )
-    # print(line)
-    # print(len(line))
