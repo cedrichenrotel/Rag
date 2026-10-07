@@ -5,6 +5,12 @@ from src.model import Chunk
 
 
 class ChunkCorpus:
+    """Lit le corpus et le decoupe en chunks.
+
+    Recupere les fichiers utiles (.md, .txt, .py), puis fait appel
+    a CutChunk pour decouper chaque texte selon son type de fichier.
+    """
+
     def list_files(self, root: str) -> list[Path]:
         """parcour tous les fichiers du dossier data/raw et creer une
         liste de chemin de tous les fichiers dont le suffixce termine
