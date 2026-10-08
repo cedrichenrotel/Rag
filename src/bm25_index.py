@@ -25,12 +25,18 @@ class Bm25Index:
 
 
 if __name__ == "__main__":
-    chunk = CutChunk()
-    chunks: list[Chunk] = chunk.chunk_file(
-        "src/chunk.py", "def test\ndefdef|\n    class trololo" * 2, 10, ".py"
+    cutter = CutChunk()
+    text = (
+        "def load_lora():\n    pass\n\n"
+        "def save_model():\n    pass\n\n"
+        "class ChunkCutter:\n    pass\n"
     )
-    bm = Bm25Index(chunks)
+    list_chunk = cutter.chunk_file("test.py", text, 2000, ".py")
+    bm = Bm25Index(list_chunk)
+    query = "How to load LoRA?"
+    query_token = bm.tokenizer.tokenize(query)
     print(len(bm.list_text), f"text: {bm.list_text}")
     print()
     print(f"tokenize_text: {bm.tokenize_text()}")
-    print(f"bm25: {bm.bm25}")
+    print(f"query_token: {query_token}")
+    print(f"bm25: {bm.bm25.get_scores(query_token)}")
