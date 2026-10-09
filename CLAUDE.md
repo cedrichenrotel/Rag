@@ -212,12 +212,9 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 | 2026-10-05 | 0 | Mise en place : uv, arborescence `data/`, CLI Fire (6 commandes vides), Makefile, `.flake8`, `[tool.mypy]`. Reste : types de retour dans `rag_cli.py` (5 erreurs mypy) | – | – |
 | 2026-10-07 | 1-2 | Modèles pydantic (`model.py`). Chunking : `CutChunk.chunk_file` (coupe aux `#` pour md/txt, aux `def`/`class` pour py, recoupe à `max_chunk_size`), `ChunkCorpus.chunk_corpus` → 27 248 chunks sur 1 969 fichiers, max 2000 caractères | – | – |
 | 2026-10-08 | 3 (en cours) | `Tokenizer.tokenize` (snake_case, camelCase, minuscules). `Bm25Index` dans `src/bm25_index.py` : `__init__` construit `self.bm25 = BM25Okapi(self.tokenize_text())`, test manuel de `get_scores` OK sur 3 chunks | – | – |
+| 2026-10-09 | 3 (en cours) | `Bm25Index.list_scores(query)` (zip notes/chunks + tri décroissant) et `Bm25Index.search(query, k)` (k meilleurs chunks). Test manuel OK : `search("How to load LoRA?", 2)` renvoie `load_lora` en premier. flake8 + mypy propres sur `bm25_index.py` | – | – |
 
-**Prochaine étape (où reprendre)** : écrire `Bm25Index.search(self, query: str, k: int) -> list[Chunk]` :
-1. découper la question avec `self.tokenizer.tokenize` (pas `split()`),
-2. calculer les notes avec `self.bm25.get_scores`,
-3. trier les **positions** par note décroissante (`sorted(range(len(notes)), key=lambda i: notes[i], reverse=True)`),
-4. renvoyer les chunks des `k` premières positions.
-Test attendu : `bm.search("How to load LoRA?", 2)` renvoie le chunk `load_lora` en premier.
-Ensuite : sauvegarder l'index dans `data/processed/`, puis mesurer le temps d'indexation sur le corpus entier.
+**Prochaine étape (où reprendre)** : sauvegarder l'index dans `data/processed/` (commande `index`) et le recharger,
+puis mesurer le temps d'indexation sur le corpus entier (limite : 5 min).
+À prévoir : `search` avec `k <= 0` ou une question vide (étape 6, pas de traceback).
 À revoir à l'étape 4 : la règle camelCase coupe `LoRA` en `lo` + `ra` (ne correspond plus à `lora`).

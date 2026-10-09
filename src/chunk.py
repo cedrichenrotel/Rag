@@ -71,5 +71,4 @@ class CutChunk:
             chunks.extend(
                 self.chunk_fixed(file_path, text, max_chunk_size, start, end)
             )
-
         return chunks

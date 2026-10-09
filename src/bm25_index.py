@@ -1,6 +1,5 @@
 from rank_bm25 import BM25Okapi
 
-from src.chunk import CutChunk
 from src.model import Chunk
 from src.tokenizer import Tokenizer
 
@@ -23,20 +22,26 @@ class Bm25Index:
             list_tokens.append(self.tokenizer.tokenize(text))
         return list_tokens
 
+    def list_scores(self, query: str) -> list[tuple[float, Chunk]]:
+        """Retourne les paires (note, chunk) triees de la meilleure
+        note a la moins bonne pour la question donnee.
 
-if __name__ == "__main__":
-    cutter = CutChunk()
-    text = (
-        "def load_lora():\n    pass\n\n"
-        "def save_model():\n    pass\n\n"
-        "class ChunkCutter:\n    pass\n"
-    )
-    list_chunk = cutter.chunk_file("test.py", text, 2000, ".py")
-    bm = Bm25Index(list_chunk)
-    query = "How to load LoRA?"
-    query_token = bm.tokenizer.tokenize(query)
-    print(len(bm.list_text), f"text: {bm.list_text}")
-    print()
-    print(f"tokenize_text: {bm.tokenize_text()}")
-    print(f"query_token: {query_token}")
-    print(f"bm25: {bm.bm25.get_scores(query_token)}")
+        query: question permettra a bm25 de donner une note au chunk"""
+
+        query_token: list[str] = self.tokenizer.tokenize(query)
+        note: list[float] = self.bm25.get_scores(query_token)
+        list_scores: list[tuple[float, Chunk]] = sorted(
+            zip(note, self.list_chunks),
+            key=lambda pair: pair[0],
+            reverse=True,
+        )
+        return list_scores
+
+    def search(self, query: str, k: int) -> list[Chunk]:
+        """retourne  les k meilleurs chunk de la liste des scores
+
+        query: question
+        k: nombre des milleurs chunk a retourner"""
+
+        list_scores: list[tuple[float, Chunk]] = self.list_scores(query)
+        return [chunk for _, chunk in list_scores[:k]]
