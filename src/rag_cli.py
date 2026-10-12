@@ -1,14 +1,36 @@
+from pathlib import Path
+
+from src.corpus import ChunkCorpus
+from src.model import Chunk
+from src.path import PathFile
+
+
 class RagCli:
     """class contenant toutes les methodes pour
     exectuter les commande d'entree que fire
     transformera"""
 
-    def index(self, max_chunk_size: int = 2000) -> None:
+    def index(
+        self,
+        max_chunk_size: int = 2000,
+        raw_path: str = "data/raw",
+        index_path: str = "data/processed/index.json",
+    ) -> None:
         """Decoupe les fichiers en paquet de 2000 caractere
         max dans data/raw/vllm-0.10.1 et sauvegarde l'index
-        dans data/processed"""
+        dans data/processed
 
-        print(f"max_chunk_size: {max_chunk_size}")
+        max_chunk_size: taille max chunk
+        raw_path: donnee brut
+        index_path: fichier stock resultat index"""
+
+        chunkcorpus: ChunkCorpus = ChunkCorpus()
+        pathfile: PathFile = PathFile()
+
+        list_chunk: list[Chunk] = chunkcorpus.chunk_corpus(
+            Path(raw_path), max_chunk_size
+        )
+        pathfile.save(list_chunk, Path(index_path))
 
     def search(self, query: str, k: int = 10):
         """permet de retourner les k meilleurs chunk du

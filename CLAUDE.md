@@ -179,7 +179,7 @@ Coche au fur et à mesure. Claude : regarde où j'en suis avant de proposer la s
 - [ ] BM25 (ou TF-IDF) sur les chunks, sauvegardé dans `data/processed/`.
 - [ ] Tokenisation adaptée au code : couper `load_lora_adapter` en `load`, `lora`,
   `adapter`, idem pour le camelCase. C'est souvent ce qui fait passer le dataset code.
-- [ ] Vérifier : indexation < 5 min.
+- [x] Vérifier : indexation < 5 min.
 
 ### Étape 4 — Recherche
 - [ ] `search` (1 question) et `search_dataset` (JSON) → sortie `StudentSearchResults`.
@@ -213,8 +213,11 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 | 2026-10-07 | 1-2 | Modèles pydantic (`model.py`). Chunking : `CutChunk.chunk_file` (coupe aux `#` pour md/txt, aux `def`/`class` pour py, recoupe à `max_chunk_size`), `ChunkCorpus.chunk_corpus` → 27 248 chunks sur 1 969 fichiers, max 2000 caractères | – | – |
 | 2026-10-08 | 3 (en cours) | `Tokenizer.tokenize` (snake_case, camelCase, minuscules). `Bm25Index` dans `src/bm25_index.py` : `__init__` construit `self.bm25 = BM25Okapi(self.tokenize_text())`, test manuel de `get_scores` OK sur 3 chunks | – | – |
 | 2026-10-09 | 3 (en cours) | `Bm25Index.list_scores(query)` (zip notes/chunks + tri décroissant) et `Bm25Index.search(query, k)` (k meilleurs chunks). Test manuel OK : `search("How to load LoRA?", 2)` renvoie `load_lora` en premier. flake8 + mypy propres sur `bm25_index.py` | – | – |
+| 2026-10-12 | 3 (en cours) | Choix : index sauvegardé en **JSON** (pas pickle). `PathFile` dans `src/path.py` : `save(chunks, path)` (`model_dump` + `json.dump`, crée le dossier parent) et `load(path)` (`json.load` + `Chunk.model_validate`). Commande `index` branchée (`--raw_path`, `--index_path`, convertis en `Path` dans `rag_cli.py`) : 27 248 chunks, 25 Mo, **0,8 s** | – | – |
 
-**Prochaine étape (où reprendre)** : sauvegarder l'index dans `data/processed/` (commande `index`) et le recharger,
-puis mesurer le temps d'indexation sur le corpus entier (limite : 5 min).
-À prévoir : `search` avec `k <= 0` ou une question vide (étape 6, pas de traceback).
+**Prochaine étape (où reprendre)** : commande `search` : `load` de l'index, construire `Bm25Index(chunks)`, renvoyer les k meilleurs.
+Mesurer le temps de reconstruction du BM25 à chaque `search` (il n'est pas sauvegardé, seuls les chunks le sont).
+À prévoir (étape 6, pas de traceback) : `search` avec `k <= 0` ou une question vide ; `index --raw_path` inexistant
+(`ValueError` non attrapée) ; `load` sur fichier absent ou JSON cassé (`ValidationError`).
+Reste aussi : types de retour manquants sur `search`, `search_dataset`, `answer`, `answer_dataset`, `evaluate` (5 erreurs mypy).
 À revoir à l'étape 4 : la règle camelCase coupe `LoRA` en `lo` + `ra` (ne correspond plus à `lora`).

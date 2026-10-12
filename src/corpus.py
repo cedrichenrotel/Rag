@@ -11,18 +11,20 @@ class ChunkCorpus:
     a CutChunk pour decouper chaque texte selon son type de fichier.
     """
 
-    def list_files(self, root: str) -> list[Path]:
+    def list_files(self, raw_path: Path) -> list[Path]:
         """parcour tous les fichiers du dossier data/raw et creer une
         liste de chemin de tous les fichiers dont le suffixce termine
-        par: .py, .md, .txt"""
+        par: .py, .md, .txt
+        
+        raw_path: donnee brute"""
 
-        root_path: Path = Path(root)
-
-        if not root_path.is_dir():
-            raise ValueError(f"[WARNING] list_files: Not a directory: {root}")
+        if not raw_path.is_dir():
+            raise ValueError(
+                f"[WARNING] list_files: Not a directory: {raw_path}"
+            )
 
         list_file: list[Path] = []
-        for path in root_path.rglob("*"):
+        for path in raw_path.rglob("*"):
             if path.is_file() and path.suffix in (".md", ".py", ".txt"):
                 list_file.append(path)
 
@@ -34,10 +36,13 @@ class ChunkCorpus:
 
         return file.read_text(encoding="utf-8")
 
-    def chunk_corpus(self, root: str, max_chunk_size: int) -> list[Chunk]:
-        """retourne une liste de chunk de tous le corpus"""
+    def chunk_corpus(self, raw_path: Path, max_chunk_size: int) -> list[Chunk]:
+        """retourne une liste de chunk de tous le corpus
+        
+        raw_patch: donnee brut de base
+        max_chunk_size: taille max par chunk"""
 
-        path_list: list[Path] = self.list_files(root)
+        path_list: list[Path] = self.list_files(raw_path)
         if not path_list:
             raise FileNotFoundError(
                 "[WARNING] chunk_corpus: File (“.md”/.txt'/“.py”) not found"
