@@ -45,3 +45,17 @@ class Bm25Index:
 
         list_scores: list[tuple[float, Chunk]] = self.list_scores(query)
         return [chunk for _, chunk in list_scores[:k]]
+
+    def save(self, path: str) -> None:
+        """Sauvegarde l'objet Bm25Index entier (les chunks et l'index
+      bm25 deja construit) dans un fichier binaire avec pickle.
+      Ce fichier permet a la commande search de retrouver l'index
+      sans relire ni redecouper tout le corpus.
+
+      path: chemin du fichier a creer (ex: data/processed/index.pkl).
+      S'il existe deja, il est remplace."""
+
+        import pickle
+
+        with open(path, "wb") as file:
+            pickle.dump(self, file)
