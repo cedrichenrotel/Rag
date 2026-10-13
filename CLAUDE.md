@@ -183,7 +183,7 @@ Coche au fur et à mesure. Claude : regarde où j'en suis avant de proposer la s
 
 ### Étape 4 — Recherche
 - [x] `search` (1 question) et `search_dataset` (JSON) → sortie `StudentSearchResults`.
-- [ ] `evaluate` maison + moulinette officielle. Objectif docs ≥ 80 %, code ≥ 50 %.
+- [x] `evaluate` maison + moulinette officielle. Objectif docs ≥ 80 %, code ≥ 50 %.
 - [ ] Itérer **une chose à la fois** (taille de chunk, tokenisation…) et noter les scores.
 
 ### Étape 5 — Génération avec Qwen3-0.6B
@@ -215,10 +215,12 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 | 2026-10-09 | 3 (en cours) | `Bm25Index.list_scores(query)` (zip notes/chunks + tri décroissant) et `Bm25Index.search(query, k)` (k meilleurs chunks). Test manuel OK : `search("How to load LoRA?", 2)` renvoie `load_lora` en premier. flake8 + mypy propres sur `bm25_index.py` | – | – |
 | 2026-10-12 | 3 (en cours) | Choix : index sauvegardé en **JSON** (pas pickle). `PathFile` dans `src/path.py` : `save(chunks, path)` (`model_dump` + `json.dump`, crée le dossier parent) et `load(path)` (`json.load` + `Chunk.model_validate`). Commande `index` branchée (`--raw_path`, `--index_path`, convertis en `Path` dans `rag_cli.py`) : 27 248 chunks, 25 Mo, **0,8 s** | – | – |
 | 2026-10-13 | 4 (en cours) | `search` (affichage top-k) et `search_dataset` (boucle sur les questions, `Chunk` → `MinimalSource`, fichier nommé comme le dataset d'entrée, `PathFile.load_dataset` / `save_result`). `_load_bm25` partagé. Modèles `MinimalSearchResults`, `MinimalAnswer`, `StudentSearchResults`, `StudentSearchResultsAndAnswer`. 1re mesure moulinette (k=10) : 8 s pour 100 questions | 60,6 % | 80,0 % |
+| 2026-10-13 | 4 (en cours) | Commande `evaluate` : `Evaluator` dans `src/evaluate.py` (`iou`, `is_match`, `is_in_top_k`, `recall_question`, `recall_dataset` avec dictionnaire par `question_id`), `PathFile.load_results`. Scores identiques à la moulinette pour k = 1, 3, 5, 10 | 60,6 % | 80,0 % |
 
-**Prochaine étape (où reprendre)** : commande `evaluate` maison (recall@k, IoU ≥ 0.05), puis itérer pour gagner de la marge
-sur docs (80,0 % = pile le seuil, recall@10 = 83 %).
+**Prochaine étape (où reprendre)** : itérer **une chose à la fois** pour gagner de la marge sur docs
+(80,0 % = pile le seuil, recall@10 = 83 %), en mesurant avec `evaluate` après chaque essai.
 À prévoir (étape 6, pas de traceback) : `search` avec `k <= 0` ou une question vide ; `index --raw_path` inexistant
-(`ValueError` non attrapée) ; `load` / `load_dataset` sur fichier absent ou JSON cassé (`ValidationError`).
-Reste aussi : types de retour manquants sur `answer`, `answer_dataset`, `evaluate` (3 erreurs mypy).
+(`ValueError` non attrapée) ; `load` / `load_dataset` / `load_results` sur fichier absent ou JSON cassé (`ValidationError`) ;
+`recall_dataset` sur un dataset vide (division par zéro).
+Reste aussi : types de retour manquants sur `answer`, `answer_dataset` (2 erreurs mypy).
 À revoir à l'étape 4 : la règle camelCase coupe `LoRA` en `lo` + `ra` (ne correspond plus à `lora`).

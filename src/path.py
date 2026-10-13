@@ -51,6 +51,19 @@ class PathFile:
             dataset: RagDataset = RagDataset.model_validate(data)
         return dataset
 
+    def load_results(self, path: Path) -> StudentSearchResults:
+        """Relit le fichier produit par search_dataset et obtient un
+        objet StudentSearchResults (flag -> evaluate).
+        args:
+            - path -> fichier cibler"""
+
+        with open(path, "r") as f:
+            data: dict[str, Any] = json.load(f)
+            results: StudentSearchResults = (
+                StudentSearchResults.model_validate(data)
+            )
+        return results
+
     def save_result(
         self, student_results: StudentSearchResults, output_path: Path
     ) -> None:

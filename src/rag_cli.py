@@ -2,6 +2,7 @@ from pathlib import Path
 
 from src.bm25_index import Bm25Index
 from src.corpus import ChunkCorpus
+from src.evaluate import Evaluator
 from src.model import (
     Chunk,
     MinimalSearchResults,
@@ -20,6 +21,7 @@ class RagCli:
     def __init__(self) -> None:
         self.chunkcorpus: ChunkCorpus = ChunkCorpus()
         self.pathfile: PathFile = PathFile()
+        self.evaluator: Evaluator = Evaluator()
 
     def _load_bm25(self, path: str) -> Bm25Index:
         """Charge les chunks du fichier d'index et construit l'outil
@@ -135,11 +137,24 @@ class RagCli:
                 - save_directory -> dossier ou est stocker le fichier des
                   reponses"""
 
-    def evaluate(self, student_search_results_path: str, dataset_path: str):
+    def evaluate(
+        self,
+        student_search_results_path: str,
+        dataset_path: str,
+        k: int = 10,
+    ) -> float:
         """compare les resultats de recherche avec le corriger et creer un
         pourcentage de reussite.
             args:
                 - student_search_results_path -> chemin du fichier JSON
                   produit par la fonction search_dataset
                 - dataset_path -> chemin du fichier JSON corrige
-                (AnsweredQuestions))"""
+                (AnsweredQuestions))
+        retour: une moyenne de bonne reponse sur la liste de toute les
+        questions"""
+
+        dataset: RagDataset = self.pathfile.load_dataset(Path(dataset_path))
+        student: StudentSearchResults = self.pathfile.load_results(
+            Path(student_search_results_path)
+        )
+        return self.evaluator.recall_dataset(dataset, student, k)
