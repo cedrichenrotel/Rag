@@ -15,8 +15,8 @@ class ChunkCorpus:
         """parcour tous les fichiers du dossier data/raw et creer une
         liste de chemin de tous les fichiers dont le suffixce termine
         par: .py, .md, .txt
-        
-        raw_path: donnee brute"""
+        args:
+            - raw_path: donnee brute"""
 
         if not raw_path.is_dir():
             raise ValueError(
@@ -38,9 +38,9 @@ class ChunkCorpus:
 
     def chunk_corpus(self, raw_path: Path, max_chunk_size: int) -> list[Chunk]:
         """retourne une liste de chunk de tous le corpus
-        
-        raw_patch: donnee brut de base
-        max_chunk_size: taille max par chunk"""
+        args:
+            - raw_patch: donnee brut de base
+            - max_chunk_size: taille max par chunk"""
 
         path_list: list[Path] = self.list_files(raw_path)
         if not path_list:
