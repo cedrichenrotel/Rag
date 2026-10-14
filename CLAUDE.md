@@ -177,7 +177,7 @@ Coche au fur et à mesure. Claude : regarde où j'en suis avant de proposer la s
 
 ### Étape 3 — Index lexical + sauvegarde
 - [x] BM25 (ou TF-IDF) sur les chunks, sauvegardé dans `data/processed/`.
-- [ ] Tokenisation adaptée au code : couper `load_lora_adapter` en `load`, `lora`,
+- [x] Tokenisation adaptée au code : couper `load_lora_adapter` en `load`, `lora`,
   `adapter`, idem pour le camelCase. C'est souvent ce qui fait passer le dataset code.
 - [x] Vérifier : indexation < 5 min.
 
@@ -216,11 +216,11 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 | 2026-10-12 | 3 (en cours) | Choix : index sauvegardé en **JSON** (pas pickle). `PathFile` dans `src/path.py` : `save(chunks, path)` (`model_dump` + `json.dump`, crée le dossier parent) et `load(path)` (`json.load` + `Chunk.model_validate`). Commande `index` branchée (`--raw_path`, `--index_path`, convertis en `Path` dans `rag_cli.py`) : 27 248 chunks, 25 Mo, **0,8 s** | – | – |
 | 2026-10-13 | 4 (en cours) | `search` (affichage top-k) et `search_dataset` (boucle sur les questions, `Chunk` → `MinimalSource`, fichier nommé comme le dataset d'entrée, `PathFile.load_dataset` / `save_result`). `_load_bm25` partagé. Modèles `MinimalSearchResults`, `MinimalAnswer`, `StudentSearchResults`, `StudentSearchResultsAndAnswer`. 1re mesure moulinette (k=10) : 8 s pour 100 questions | 60,6 % | 80,0 % |
 | 2026-10-13 | 4 (en cours) | Commande `evaluate` : `Evaluator` dans `src/evaluate.py` (`iou`, `is_match`, `is_in_top_k`, `recall_question`, `recall_dataset` avec dictionnaire par `question_id`), `PathFile.load_results`. Scores identiques à la moulinette pour k = 1, 3, 5, 10 | 60,6 % | 80,0 % |
+| 2026-10-13 | 4 (en cours) | Tokenizer : règle camelCase `([a-z]{2})([A-Z])` (au moins 2 minuscules avant la majuscule) → `LoRA` reste `lora`, `loadLora` est toujours coupé. Essais mesurés : règle supprimée = docs 85,0 % / code 50,5 % (rejeté) | 61,6 % | 82,0 % |
 
 **Prochaine étape (où reprendre)** : itérer **une chose à la fois** pour gagner de la marge sur docs
-(80,0 % = pile le seuil, recall@10 = 83 %), en mesurant avec `evaluate` après chaque essai.
+(82,0 %, seuil 80 % ; recall@10 = 86 %), en mesurant avec `evaluate` après chaque essai.
 À prévoir (étape 6, pas de traceback) : `search` avec `k <= 0` ou une question vide ; `index --raw_path` inexistant
 (`ValueError` non attrapée) ; `load` / `load_dataset` / `load_results` sur fichier absent ou JSON cassé (`ValidationError`) ;
 `recall_dataset` sur un dataset vide (division par zéro).
 Reste aussi : types de retour manquants sur `answer`, `answer_dataset` (2 erreurs mypy).
-À revoir à l'étape 4 : la règle camelCase coupe `LoRA` en `lo` + `ra` (ne correspond plus à `lora`).

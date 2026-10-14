@@ -11,6 +11,6 @@ class Tokenizer:
 
         text: contenu d'un token"""
 
-        re_text: str = re.sub(r"([a-z])([A-Z])", r"\1 \2", text)
+        re_text: str = re.sub(r"([a-z]{2})([A-Z])", r"\1 \2", text)
         text_lowercase: str = re_text.lower()
         return re.findall(r"[a-z0-9]+", text_lowercase)
