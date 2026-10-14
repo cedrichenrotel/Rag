@@ -39,14 +39,16 @@ class CutChunk:
 
         positions: list[int] = []
         position: int = 0
-
+        code_bloc: bool = False
         for line in text.splitlines(keepends=True):
             if suffix == ".py":
                 to_check = line.lstrip()
             else:
                 to_check = line
+                if to_check.startswith("```"):
+                    code_bloc = not code_bloc
 
-            if to_check.startswith(prefixes):
+            if to_check.startswith(prefixes) and code_bloc is False:
                 positions.append(position)
             position += len(line)
 
