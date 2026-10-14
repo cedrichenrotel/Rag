@@ -7,7 +7,9 @@ dependencies = [
     "pydantic>=2.13.5",
     "rank-bm25>=0.2.2",
     "ruff>=0.16.10",
+    "torch>=2.14.1",
     "tqdm>=4.70.1",
+    "transformers>=5.19.0",
 ]
 
 [dependency-groups]
@@ -29,3 +31,11 @@ ignore = ["SIM103", "RUF100"]
   ignore_missing_imports = true
   disallow_untyped_defs = true
   check_untyped_defs = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
