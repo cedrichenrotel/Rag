@@ -222,6 +222,10 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 | 2026-10-13 | 4 (en cours) | Tokenizer : règle camelCase `([a-z]{2})([A-Z])` (au moins 2 minuscules avant la majuscule) → `LoRA` reste `lora`, `loadLora` est toujours coupé. Essais mesurés : règle supprimée = docs 85,0 % / code 50,5 % (rejeté) | 61,6 % | 82,0 % |
 | 2026-10-14 | 4 (en cours) | Chunking md/txt : les `#` dans les blocs ` ``` ` ne sont plus pris pour des titres (bool `code_bloc` basculé avec `not`, seulement hors `.py` car 30 fichiers `.py` ont des ` ``` ` dans leurs docstrings). Aucun effet mesuré, gardé car plus juste. Aussi : options mypy copiées dans `[tool.mypy]` pour que VS Code voie les mêmes erreurs que `make lint` | 61,6 % | 82,0 % |
 
+| 2026-10-15 | 5 (en cours) | `QwenGenerator` dans `src/qwen_generator.py` : `apply_chat_template` (system + « Context / Question », `enable_thinking=False`), `generate(**input_ids, max_new_tokens=...)`, découpe des tokens du prompt (`len_prompt`), `decode(..., skip_special_tokens=True)`. `self.model: Any` car les types de transformers perdent mypy. Test manuel OK, flake8 + mypy propres | 61,6 % | 82,0 % |
+
+**Reste étape 5** : limiter la taille du contexte aux tokens du modèle, brancher `answer` / `answer_dataset`.
+
 **Prochaine étape (où reprendre)** : itérer **une chose à la fois** pour gagner de la marge sur docs
 (82,0 %, seuil 80 % ; recall@10 = 86 %), en mesurant avec `evaluate` après chaque essai.
 À prévoir (étape 6, pas de traceback) : `search` avec `k <= 0` ou une question vide ; `index --raw_path` inexistant

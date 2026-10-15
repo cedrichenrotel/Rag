@@ -1,5 +1,8 @@
 from pathlib import Path
 
+import uuid
+
+from src.qwen_generator import QwenGenerator
 from src.bm25_index import Bm25Index
 from src.corpus import ChunkCorpus
 from src.evaluate import Evaluator
@@ -9,6 +12,7 @@ from src.model import (
     MinimalSource,
     RagDataset,
     StudentSearchResults,
+    MinimalAnswer,
 )
 from src.path import PathFile
 
@@ -22,6 +26,28 @@ class RagCli:
         self.chunkcorpus: ChunkCorpus = ChunkCorpus()
         self.pathfile: PathFile = PathFile()
         self.evaluator: Evaluator = Evaluator()
+
+    def _to_sources(self, chunks: list[Chunk]) -> list[MinimalSource]:
+        """Convertis une liste de chunk en une liste
+        list[MinimalSource]
+
+        Args:
+            chunks (list[chunk]): liste d'indexation que bm25 renvois
+
+        Returns:
+            list[MinimalSource]: retourne une liste de classe MinimalSource
+        """
+
+        sources: list[MinimalSource] = []
+        for chunk in chunks:
+            sources.append(
+                MinimalSource(
+                    file_path=chunk.file_path,
+                    first_character_index=chunk.first_character_index,
+                    last_character_index=chunk.last_character_index,
+                )
+            )
+        return sources
 
     def _load_bm25(self, path: str) -> Bm25Index:
         """Charge les chunks du fichier d'index et construit l'outil
@@ -63,7 +89,8 @@ class RagCli:
         classement d'une question.
             args:
                 - query -> questions posee
-                - k -> nombre de chunk"""
+                - k -> nombre de chunk
+                - index_path -> chemin du fichier indexer"""
 
         bm25: Bm25Index = self._load_bm25(index_path)
         top_chunks: list[Chunk] = bm25.search(query, k)
@@ -98,14 +125,7 @@ class RagCli:
         list_results: list[MinimalSearchResults] = []
         for question in dataset.rag_questions:
             top_chunks: list[Chunk] = bm25.search(question.question, k)
-            sources: list[MinimalSource] = [
-                MinimalSource(
-                    file_path=chunk.file_path,
-                    first_character_index=chunk.first_character_index,
-                    last_character_index=chunk.last_character_index,
-                )
-                for chunk in top_chunks
-            ]
+            sources: list[MinimalSource] = self._to_sources(top_chunks)
             result: MinimalSearchResults = MinimalSearchResults(
                 question_id=question.question_id,
                 question=question.question,
@@ -118,24 +138,45 @@ class RagCli:
         output_path: Path = Path(save_directory) / Path(dataset_path).name
         self.pathfile.save_result(student_result, output_path)
 
-    def answer(self, query: str, k: int = 10):
+    def answer(
+        self,
+        query: str,
+        k: int = 10,
+        index_path: str = "data/processed/index.json",
+    ) -> None:
         """retourne les k meilleurs chunk d'une question et l'envois
         au model Qwen afin de rediger une reponse en texte.
             args:
                 - query -> question posee
-                - k -> nombre de chunk a retourner"""
+                - k -> nombre de chunk a retourner
+                - index_path -> chemin fichier sont stcker les chunks pour
+                BM25"""
 
-    def answer_dataset(
-        self, student_search_results_path: str, save_directory: str
-    ):
-        """redige les reponses de toutes les questions d'un fichier et les
-        enregistre dans un fichier JSON (elle lis le fichier produit par
-        search_dataset).
-            args:
-                - student_search_results_path -> chemin du fichier JSON
-                  produit par la fonction search_dataset
-                - save_directory -> dossier ou est stocker le fichier des
-                  reponses"""
+        generator: QwenGenerator = QwenGenerator()
+        bm25: Bm25Index = self._load_bm25(index_path)
+        top_chunks: list[Chunk] = bm25.search(query, k)
+
+        context: str = "\n".join(chunk.text for chunk in top_chunks)
+        answer: str = generator.generate_answer(query, context, 100)
+        sources: list[MinimalSource] = self._to_sources(top_chunks)
+        result: MinimalAnswer = MinimalAnswer(
+            question_id=uuid.uuid4(),
+            question=query,
+            retrieved_sources=sources,
+            answer=answer,
+        )
+
+    # def answer_dataset(
+    #     self, student_search_results_path: str, save_directory: str
+    # ):
+    #     """redige les reponses de toutes les questions d'un fichier et les
+    #     enregistre dans un fichier JSON (elle lis le fichier produit par
+    #     search_dataset).
+    #         args:
+    #             - student_search_results_path -> chemin du fichier JSON
+    #               produit par la fonction search_dataset
+    #             - save_directory -> dossier ou est stocker le fichier des
+    #               reponses"""
 
     def evaluate(
         self,
