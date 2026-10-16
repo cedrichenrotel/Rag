@@ -25,6 +25,8 @@ Règles de comportement :
   courte (« à ton avis, pourquoi on découpe les fichiers en morceaux ? »).
 - Si je fais une erreur, **ne la corrige pas silencieusement** : montre-moi où elle est et pourquoi.
 - Préfère les solutions **simples et compréhensibles** aux solutions « magiques ».
+- **Réponses concises et courtes** : quelques lignes, oui/non d'abord si possible, un exemple tiré de mon code, pas de tableaux ni de longues listes.
+- **À chaque nouvelle fonction** : d'abord expliquer concrètement et brièvement ce qu'elle fait (but, reçoit, retourne, exemple tiré de mon code), puis me donner **la liste numérotée des tâches** à faire, étape par étape, avant de coder.
 
 ---
 
@@ -224,11 +226,18 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 
 | 2026-10-15 | 5 (en cours) | `QwenGenerator` dans `src/qwen_generator.py` : `apply_chat_template` (system + « Context / Question », `enable_thinking=False`), `generate(**input_ids, max_new_tokens=...)`, découpe des tokens du prompt (`len_prompt`), `decode(..., skip_special_tokens=True)`. `self.model: Any` car les types de transformers perdent mypy. Test manuel OK, flake8 + mypy propres | 61,6 % | 82,0 % |
 
-**Reste étape 5** : limiter la taille du contexte aux tokens du modèle, brancher `answer` / `answer_dataset`.
+| 2026-10-16 | 5 (en cours) | `answer` branché : BM25 → contexte (chunks séparés par `\n\n`) → `generate_answer`. Affichage partagé avec `search` via `_print_result(query, top_chunks, answer=None)`. `MinimalAnswer` retiré de `answer` (réservé à `answer_dataset`). Test OK sur « How to load a LoRA adapter? » (k=3), flake8 + mypy propres | 61,6 % | 82,0 % |
+
+| 2026-10-16 | 5 (en cours) | `QwenGenerator._build_context(list_text, max_context_tokens=1000)` : ajoute les chunks dans l'ordre BM25 tant que le total de tokens (`len(tokenizer(text)["input_ids"])`) reste sous le budget ; si le 1er chunk dépasse seul, il est coupé à `max_context_tokens` tokens (`decode`). `generate_answer` reçoit maintenant `list_texts: list[str]` + `max_context_tokens`. Testé sur 4 cas (normal, tout, 1er trop gros, liste vide) ; `answer --k 10` OK en 28 s | 61,6 % | 82,0 % |
+
+| 2026-10-16 | 5 (en cours) | `answer_dataset` : `load_results` → Qwen chargé 1 fois → par question, `_read_source` (relit `data/raw` avec `read_file` + tranche `[first:last]`) sur chaque source → `generate_answer` → `MinimalAnswer` (id recopié) → `StudentSearchResultsAndAnswer(k=student.k)` → `save_result` (type élargi avec `\|`). Test sur 3 questions : 33 s, réponses cohérentes | 61,6 % | 82,0 % |
+
+**Reste étape 5** : barre `tqdm` dans `answer_dataset` (~10 s/question → ~15 min pour 100) ; `max_new_tokens` / `max_context_tokens` pas encore en arguments CLI de `answer` ; docstring d'`answer_dataset` (nouveaux paramètres).
+**Noté pour l'étape 6** : Fire expose `chunkcorpus`, `pathfile`, `evaluator` comme groupes de commandes (attributs publics de `RagCli`).
 
 **Prochaine étape (où reprendre)** : itérer **une chose à la fois** pour gagner de la marge sur docs
 (82,0 %, seuil 80 % ; recall@10 = 86 %), en mesurant avec `evaluate` après chaque essai.
 À prévoir (étape 6, pas de traceback) : `search` avec `k <= 0` ou une question vide ; `index --raw_path` inexistant
 (`ValueError` non attrapée) ; `load` / `load_dataset` / `load_results` sur fichier absent ou JSON cassé (`ValidationError`) ;
 `recall_dataset` sur un dataset vide (division par zéro).
-Reste aussi : types de retour manquants sur `answer`, `answer_dataset` (2 erreurs mypy).
+Reste aussi : type de retour à mettre sur `answer_dataset` quand il sera décommenté.

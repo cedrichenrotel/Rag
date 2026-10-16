@@ -2,7 +2,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-from src.model import Chunk, RagDataset, StudentSearchResults
+from src.model import (
+    Chunk,
+    RagDataset,
+    StudentSearchResults,
+    StudentSearchResultsAndAnswer,
+)
 
 
 class PathFile:
@@ -65,7 +70,9 @@ class PathFile:
         return results
 
     def save_result(
-        self, student_results: StudentSearchResults, output_path: Path
+        self,
+        student_results: StudentSearchResults | StudentSearchResultsAndAnswer,
+        output_path: Path,
     ) -> None:
         """Cree un fichier 'dataset_doc_public.json et stock le resultat
         args:

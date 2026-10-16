@@ -1,20 +1,19 @@
 from pathlib import Path
 
-import uuid
-
-from src.qwen_generator import QwenGenerator
 from src.bm25_index import Bm25Index
 from src.corpus import ChunkCorpus
 from src.evaluate import Evaluator
 from src.model import (
     Chunk,
+    MinimalAnswer,
     MinimalSearchResults,
     MinimalSource,
     RagDataset,
     StudentSearchResults,
-    MinimalAnswer,
+    StudentSearchResultsAndAnswer,
 )
 from src.path import PathFile
+from src.qwen_generator import QwenGenerator
 
 
 class RagCli:
@@ -26,6 +25,47 @@ class RagCli:
         self.chunkcorpus: ChunkCorpus = ChunkCorpus()
         self.pathfile: PathFile = PathFile()
         self.evaluator: Evaluator = Evaluator()
+
+    def _read_source(self, source: MinimalSource) -> str:
+        """elle retourne un passage du texte a partir de son
+        adresse(fichier + index).
+
+        Args:
+            source (MinimalSource): reponse generer par bm25
+
+        Returns:
+            str: retourne le passage entre les 2 index
+        """
+
+        text: str = self.chunkcorpus.read_file(Path(source.file_path))
+        return text[source.first_character_index:source.last_character_index]
+
+    def _print_result(
+        self, query: str, top_chunks: list[Chunk], answer: str | None = None
+    ) -> None:
+        """affiche les resultats generer par les fonction 'def search()' ou
+        'def answer().
+
+        Args:
+            query (str): question a repondre
+            top_chunks (list[Chunk]): resultat des meilleur chunk generer par
+            bm25.
+            answer (str | None, optional): reponse generer par le model de
+            language. Defaults to None.
+        """
+
+        print(f"\nQuery: {query}")
+        print("\n        __ RANKINGS __  \n")
+        for i, chunk in enumerate(top_chunks, start=1):
+            print(f"Top {i}: {chunk.file_path}")
+            print(
+                f"    - First_character_index: {chunk.first_character_index}"
+            )
+            print(f"    - Last_character_index: {chunk.last_character_index}")
+        if answer:
+            print("\n     __ GENERATE ANSWER __\n")
+            print(f"    - Answer: {answer}")
+        print()
 
     def _to_sources(self, chunks: list[Chunk]) -> list[MinimalSource]:
         """Convertis une liste de chunk en une liste
@@ -94,15 +134,7 @@ class RagCli:
 
         bm25: Bm25Index = self._load_bm25(index_path)
         top_chunks: list[Chunk] = bm25.search(query, k)
-        print(f"\nQuery: {query}")
-        print("\n        __ Rankings __  \n")
-        for i, chunk in enumerate(top_chunks, start=1):
-            print(f"Top {i}: {chunk.file_path}")
-            print(
-                f"    - First_character_index: {chunk.first_character_index}"
-            )
-            print(f"    - Last_character_index: {chunk.last_character_index}")
-            print()
+        self._print_result(query, top_chunks, None)
 
     def search_dataset(
         self,
@@ -123,6 +155,7 @@ class RagCli:
         dataset: RagDataset = self.pathfile.load_dataset(Path(dataset_path))
         bm25: Bm25Index = self._load_bm25(index_path)
         list_results: list[MinimalSearchResults] = []
+
         for question in dataset.rag_questions:
             top_chunks: list[Chunk] = bm25.search(question.question, k)
             sources: list[MinimalSource] = self._to_sources(top_chunks)
@@ -143,8 +176,9 @@ class RagCli:
         query: str,
         k: int = 10,
         index_path: str = "data/processed/index.json",
+        max_new_tokens: int = 100,
     ) -> None:
-        """retourne les k meilleurs chunk d'une question et l'envois
+        """Affiche les k meilleurs chunk d'une question et l'envois
         au model Qwen afin de rediger une reponse en texte.
             args:
                 - query -> question posee
@@ -156,27 +190,59 @@ class RagCli:
         bm25: Bm25Index = self._load_bm25(index_path)
         top_chunks: list[Chunk] = bm25.search(query, k)
 
-        context: str = "\n".join(chunk.text for chunk in top_chunks)
-        answer: str = generator.generate_answer(query, context, 100)
-        sources: list[MinimalSource] = self._to_sources(top_chunks)
-        result: MinimalAnswer = MinimalAnswer(
-            question_id=uuid.uuid4(),
-            question=query,
-            retrieved_sources=sources,
-            answer=answer,
+        list_texts: list[str] = [chunk.text for chunk in top_chunks]
+        answer: str = generator.generate_answer(
+            query, list_texts, max_new_tokens
         )
+        self._print_result(query, top_chunks, answer)
 
-    # def answer_dataset(
-    #     self, student_search_results_path: str, save_directory: str
-    # ):
-    #     """redige les reponses de toutes les questions d'un fichier et les
-    #     enregistre dans un fichier JSON (elle lis le fichier produit par
-    #     search_dataset).
-    #         args:
-    #             - student_search_results_path -> chemin du fichier JSON
-    #               produit par la fonction search_dataset
-    #             - save_directory -> dossier ou est stocker le fichier des
-    #               reponses"""
+    def answer_dataset(
+        self,
+        student_search_results_path: str,
+        save_directory: str,
+        max_new_tokens: int = 100,
+        max_context_tokens: int = 1000,
+    ) -> None:
+        """redige les reponses de toutes les questions d'un fichier et les
+        enregistre dans un fichier JSON (elle lis le fichier produit par
+        search_dataset).
+            args:
+                - student_search_results_path -> chemin du fichier JSON
+                  produit par la fonction search_dataset
+                - save_directory -> dossier ou est stocker le fichier des
+                  reponses"""
+
+        student: StudentSearchResults = self.pathfile.load_results(
+            Path(student_search_results_path)
+        )
+        generator: QwenGenerator = QwenGenerator()
+
+        list_minimalanswer: list[MinimalAnswer] = []
+        for result in student.search_results:
+            list_text: list[str] = []
+            for source in result.retrieved_sources:
+                text: str = self._read_source(source)
+                list_text.append(text)
+            answer: str = generator.generate_answer(
+                result.question, list_text, max_new_tokens, max_context_tokens
+            )
+            list_minimalanswer.append(
+                MinimalAnswer(
+                    question_id=result.question_id,
+                    question=result.question,
+                    retrieved_sources=result.retrieved_sources,
+                    answer=answer,
+                )
+            )
+
+        student_result: StudentSearchResultsAndAnswer = (
+            StudentSearchResultsAndAnswer(search_results=list_minimalanswer,
+                                          k=student.k)
+        )
+        output_path: Path = (
+            Path(save_directory) / Path(student_search_results_path).name
+        )
+        self.pathfile.save_result(student_result, output_path)
 
     def evaluate(
         self,

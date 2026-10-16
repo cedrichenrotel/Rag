@@ -1,6 +1,7 @@
 from typing import Any
+
 from torch import Tensor
-from transformers import AutoTokenizer, AutoModelForCausalLM, BatchEncoding
+from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
 
 
 class QwenGenerator:
@@ -19,8 +20,47 @@ class QwenGenerator:
         self.tokenizer: Any = AutoTokenizer.from_pretrained(model_name)
         self.model: Any = AutoModelForCausalLM.from_pretrained(model_name)
 
+    def _build_context(
+        self, list_text: list[str], max_context_tokens: int = 1000
+    ) -> str:
+        """Assemble les textes des chunks en un seul contexte pour Qwen,
+        sans depasser un budget de tokens.
+
+        Les textes sont ajoutes dans l'ordre (le meilleur chunk BM25 en
+        premier). Des qu'un texte ferait depasser le budget, on s'arrete :
+        on garde ainsi les chunks les plus pertinents sans les couper.
+        Exception: si le 1er chunk depasse seul le budget, on garde ses
+        max_context_tokens premiers tokens, pour que Qwen ait toujours
+        un contexte.
+
+        Args:
+            list_text (list[str]): textes des chunks trouves par BM25
+            (chunk.text), du plus pertinent au moins pertinent.
+            max_context_tokens (int): nombre maximum de tokens du contexte.
+            Defaults to 1000.
+
+        Returns:
+            str: les textes gardes, separes par une ligne vide.
+        """
+
+        conserve_text: list[str] = []
+        nb_token_total: int = 0
+        for text in list_text:
+            nb_token_total += len(self.tokenizer(text)["input_ids"])
+            if nb_token_total > max_context_tokens:
+                break
+            conserve_text.append(text)
+        if not conserve_text and list_text:
+            input_ids: list[int] = self.tokenizer(list_text[0])["input_ids"]
+            cut: list[int] = input_ids[:max_context_tokens]
+            decode: str = self.tokenizer.decode(cut, skip_special_tokens=True)
+            conserve_text.append(decode)
+        context: str = "\n\n".join(conserve_text)
+        return context
+
     def generate_answer(
-        self, question: str, context: str, max_new_tokens: int = 100
+        self, question: str, list_texts: list[str], max_new_tokens: int = 100,
+        max_context_tokens: int = 1000
     ) -> str:
         """
             genere le resultat de answer(reponse generer pqr un model de
@@ -30,12 +70,16 @@ class QwenGenerator:
             question (str): question soumis a Qwen
             max_new_tokens (int, optional): nombre de token max pour
             la reponse. Defaults to 100.
-            context: texte brut trouver par BM25
+            list_texts (list[str]): textes des chunks trouves par BM25,
+            du plus pertinent au moins pertinent.
+            max_context_tokens (int, optional): nombre maximum de tokens
+            du contexte donne a Qwen. Defaults to 1000.
 
         Returns:
             str: retourne la reponse de Qwen sans la question
         """
 
+        context: str = self._build_context(list_texts, max_context_tokens)
         prompt: str = (
             "Answer the question concisely and as accurately "
             "as possible, using only the context. "
@@ -50,7 +94,7 @@ class QwenGenerator:
                 "content": f"Context:\n{context}\n\nQuestion:\n{question}",
             },
         ]
-        prompt_text = self.tokenizer.apply_chat_template(
+        prompt_text: str = self.tokenizer.apply_chat_template(
             messages,
             tokenize=False,
             add_generation_prompt=True,
