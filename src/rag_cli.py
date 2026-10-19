@@ -249,7 +249,7 @@ class RagCli:
         student_search_results_path: str,
         dataset_path: str,
         k: int = 10,
-    ) -> float:
+    ) -> None:
         """compare les resultats de recherche avec le corriger et creer un
         pourcentage de reussite.
             args:
@@ -257,11 +257,12 @@ class RagCli:
                   produit par la fonction search_dataset
                 - dataset_path -> chemin du fichier JSON corrige
                 (AnsweredQuestions))
-        retour: une moyenne de bonne reponse sur la liste de toute les
+        retour: une moyenne % de bonne reponse sur la liste de toute les
         questions"""
 
         dataset: RagDataset = self.pathfile.load_dataset(Path(dataset_path))
         student: StudentSearchResults = self.pathfile.load_results(
             Path(student_search_results_path)
         )
-        return self.evaluator.recall_dataset(dataset, student, k)
+        score: float = self.evaluator.recall_dataset(dataset, student, k)
+        print(f"recall@: {score:.1%}")
