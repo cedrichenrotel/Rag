@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import tqdm
+
 from src.bm25_index import Bm25Index
 from src.corpus import ChunkCorpus
 from src.evaluate import Evaluator
@@ -160,7 +162,7 @@ class RagCli:
             top_chunks: list[Chunk] = bm25.search(question.question, k)
             sources: list[MinimalSource] = self._to_sources(top_chunks)
             result: MinimalSearchResults = MinimalSearchResults(
-                question_id=question.question_id,
+                question_id=str(question.question_id),
                 question=question.question,
                 retrieved_sources=sources,
             )
@@ -218,7 +220,7 @@ class RagCli:
         generator: QwenGenerator = QwenGenerator()
 
         list_minimalanswer: list[MinimalAnswer] = []
-        for result in student.search_results:
+        for result in tqdm.tqdm(student.search_results, desc="Answering"):
             list_text: list[str] = []
             for source in result.retrieved_sources:
                 text: str = self._read_source(source)
