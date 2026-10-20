@@ -214,9 +214,9 @@ class RagCli:
                   produit par la fonction search_dataset
                 - save_directory -> dossier ou est stocker le fichier des
                   reponses
-                - max_new_tokens -> prend les 100 meilleurs token pour raccourcir
-                le delais d'attente
-                - """
+                - max_context_tokens -> prend les 1000 meilleurs token pour
+                raccourcir le delais d'attente
+                - max_context_tokens """
 
         student: StudentSearchResults = self.pathfile.load_results(
             Path(student_search_results_path)
