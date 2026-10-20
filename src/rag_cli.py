@@ -14,12 +14,12 @@ from src.model import (
     StudentSearchResults,
     StudentSearchResultsAndAnswer,
 )
-from src.ollama_generator import OllamaGenerator
 from src.path import PathFile
 from src.qwen_generator import QwenGenerator
+from src.rag_cli_utils import RagCliUtils
 
 
-class RagCli:
+class RagCli(RagCliUtils):
     """class contenant toutes les methodes pour
     exectuter les commande d'entree que fire
     transformera"""
@@ -28,80 +28,6 @@ class RagCli:
         self.chunkcorpus: ChunkCorpus = ChunkCorpus()
         self.pathfile: PathFile = PathFile()
         self.evaluator: Evaluator = Evaluator()
-
-    def _read_source(self, source: MinimalSource) -> str:
-        """elle retourne un passage du texte a partir de son
-        adresse(fichier + index).
-
-        Args:
-            source (MinimalSource): reponse generer par bm25
-
-        Returns:
-            str: retourne le passage entre les 2 index
-        """
-
-        text: str = self.chunkcorpus.read_file(Path(source.file_path))
-        return text[source.first_character_index:source.last_character_index]
-
-    def _print_result(
-        self, query: str, top_chunks: list[Chunk], answer: str | None = None
-    ) -> None:
-        """affiche les resultats generer par les fonction 'def search()' ou
-        'def answer().
-
-        Args:
-            query (str): question a repondre
-            top_chunks (list[Chunk]): resultat des meilleur chunk generer par
-            bm25.
-            answer (str | None, optional): reponse generer par le model de
-            language. Defaults to None.
-        """
-
-        print(f"\nQuery: {query}")
-        print("\n        __ RANKINGS __  \n")
-        for i, chunk in enumerate(top_chunks, start=1):
-            print(f"Top {i}: {chunk.file_path}")
-            print(
-                f"    - First_character_index: {chunk.first_character_index}"
-            )
-            print(f"    - Last_character_index: {chunk.last_character_index}")
-        if answer:
-            print("\n     __ GENERATE ANSWER __\n")
-            print(f"    - Answer: {answer}")
-        print()
-
-    def _to_sources(self, chunks: list[Chunk]) -> list[MinimalSource]:
-        """Convertis une liste de chunk en une liste
-        list[MinimalSource]
-
-        Args:
-            chunks (list[chunk]): liste d'indexation que bm25 renvois
-
-        Returns:
-            list[MinimalSource]: retourne une liste de classe MinimalSource
-        """
-
-        sources: list[MinimalSource] = []
-        for chunk in chunks:
-            sources.append(
-                MinimalSource(
-                    file_path=chunk.file_path,
-                    first_character_index=chunk.first_character_index,
-                    last_character_index=chunk.last_character_index,
-                )
-            )
-        return sources
-
-    def _load_bm25(self, path: str) -> Bm25Index:
-        """Charge les chunks du fichier d'index et construit l'outil
-        de recherche BM25.
-        arg:
-            - index_path -> chemin du fichier d'index
-        return: le Bm25Index pret a recevoir des questions"""
-
-        list_chunk: list[Chunk] = self.pathfile.load(Path(path))
-        bm25: Bm25Index = Bm25Index(list_chunk)
-        return bm25
 
     def index(
         self,
@@ -117,9 +43,14 @@ class RagCli:
             - raw_path -> donnee brut
             - index_path -> fichier stock resultat index"""
 
-        list_chunk: list[Chunk] = self.chunkcorpus.chunk_corpus(
-            Path(raw_path), max_chunk_size
-        )
+        try:
+            list_chunk: list[Chunk] = self.chunkcorpus.chunk_corpus(
+                Path(raw_path), max_chunk_size
+            )
+        except ValueError as e:
+            print(f"Index: {e}")
+            return
+
         self.pathfile.save(list_chunk, Path(index_path))
 
     def search(
@@ -135,7 +66,14 @@ class RagCli:
                 - k -> nombre de chunk
                 - index_path -> chemin du fichier indexer"""
 
-        bm25: Bm25Index = self._load_bm25(index_path)
+        if not self._check_query(query) or not self._check_k(k):
+            return
+
+        try:
+            bm25: Bm25Index = self._load_bm25(index_path)
+        except (ValueError, FileNotFoundError) as e:
+            print(f"[ERROR] search: {e}")
+            return
         top_chunks: list[Chunk] = bm25.search(query, k)
         self._print_result(query, top_chunks, None)
 
@@ -155,8 +93,18 @@ class RagCli:
                   resultat de recherche
                 - k -> nombre de chunk a retourner par question"""
 
-        dataset: RagDataset = self.pathfile.load_dataset(Path(dataset_path))
-        bm25: Bm25Index = self._load_bm25(index_path)
+        if not self._check_k(k):
+            return
+        try:
+            dataset: RagDataset = self.pathfile.load_dataset(
+                Path(dataset_path)
+            )
+            bm25: Bm25Index = self._load_bm25(index_path)
+        except (ValueError, FileNotFoundError) as e:
+            print(
+                f"[ERROR] search_dataset: {dataset_path}|{index_path} -> {e}"
+            )
+            return
         list_results: list[MinimalSearchResults] = []
 
         for question in dataset.rag_questions:
@@ -180,6 +128,7 @@ class RagCli:
         k: int = 10,
         index_path: str = "data/processed/index.json",
         max_new_tokens: int = 100,
+        max_context_tokens: int = 1000,
     ) -> None:
         """Affiche les k meilleurs chunk d'une question et l'envois
         au model Qwen afin de rediger une reponse en texte.
@@ -189,15 +138,24 @@ class RagCli:
                 - index_path -> chemin fichier sont stcker les chunks pour
                   BM25
                 - max_new_tokens -> Permet de recouper la longhueur maximale
-                  de la reponse ecrite par qwen"""
+                  de la reponse ecrite par qwen
+                - max_context_token -> les meilleurs chunks tant que le total
+                  reste sous ce nombre de tokens"""
 
+        if not self._check_query(query) or not self._check_k(k):
+            return
+
+        try:
+            bm25: Bm25Index = self._load_bm25(index_path)
+        except (ValueError, FileNotFoundError) as e:
+            print(f"[ERROR] answer: {e}")
+            return
         generator: QwenGenerator = QwenGenerator()
-        bm25: Bm25Index = self._load_bm25(index_path)
         top_chunks: list[Chunk] = bm25.search(query, k)
 
         list_texts: list[str] = [chunk.text for chunk in top_chunks]
         answer: str = generator.generate_answer(
-            query, list_texts, max_new_tokens
+            query, list_texts, max_new_tokens, max_context_tokens
         )
         self._print_result(query, top_chunks, answer)
 
@@ -218,13 +176,13 @@ class RagCli:
                   reponses
                 - max_new_tokens -> Permet de recouper la longhueur maximale
                   de la reponse ecrite par qwen
-                - max_context_tokens -> permet de dminuer le nombre de token
-                  en selectionnant x meilleur token choisis par bm25"""
+                - max_context_tokens -> les meilleurs chunks tant que le total
+                  reste sous ce nombre de tokens"""
 
         student: StudentSearchResults = self.pathfile.load_results(
             Path(student_search_results_path)
         )
-        generator: OllamaGenerator = OllamaGenerator()
+        generator: QwenGenerator = self._choose_generator()
 
         list_minimalanswer: list[MinimalAnswer] = []
         for result in tqdm.tqdm(student.search_results, desc="Answering"):
@@ -270,6 +228,8 @@ class RagCli:
         retour: une moyenne % de bonne reponse sur la liste de toute les
         questions"""
 
+        if not self._check_k(k):
+            return
         dataset: RagDataset = self.pathfile.load_dataset(Path(dataset_path))
         student: StudentSearchResults = self.pathfile.load_results(
             Path(student_search_results_path)

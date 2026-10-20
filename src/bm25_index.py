@@ -11,15 +11,16 @@ class Bm25Index:
     def __init__(self, list_chunks: list[Chunk]) -> None:
         self.list_chunks: list[Chunk] = list_chunks
         self.tokenizer: Tokenizer = Tokenizer()
-        self.list_text: list[str] = [chunk.text for chunk in list_chunks]
         self.bm25: BM25Okapi = BM25Okapi(self.tokenize_text())
 
     def tokenize_text(self) -> list[list[str]]:
-        """Convertir le chunks.texte en une liste de token"""
+        """Convertir le chunks.texte et chunks.path en une liste de token"""
 
         list_tokens: list[list[str]] = []
-        for text in self.list_text:
-            list_tokens.append(self.tokenizer.tokenize(text))
+        for chunk in self.list_chunks:
+            tokens: list[str] = self.tokenizer.tokenize(chunk.text)
+            tokens.extend(self.tokenizer.tokenize(chunk.file_path))
+            list_tokens.append(tokens)
         return list_tokens
 
     def list_scores(self, query: str) -> list[tuple[float, Chunk]]:

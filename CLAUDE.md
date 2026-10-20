@@ -234,11 +234,15 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 
 | 2026-10-20 | 5 (en cours) | `OllamaGenerator` (hérite de `QwenGenerator`, `ollama.chat` avec `num_predict`) branché dans `answer_dataset` **uniquement** (choix : pas de bool `use_ollama`). `answer` reste sur `QwenGenerator`. `make install` installe Ollama + `pull qwen3:0.6b`. Test 3 questions : **3 s/question** (contre ~10 s avec transformers), réponses correctes. flake8 + mypy propres | 61,6 % | 82,0 % |
 
-**Reste étape 5** : `max_context_tokens` pas en argument CLI de `answer` ; docstring d'`answer_dataset` (nouveaux paramètres).
+| 2026-10-20 | 5 + 4 | `_choose_generator` : `ollama.list()` → `OllamaGenerator`, sinon `except ConnectionError` → message + `QwenGenerator` (testé serveur ON/OFF). `answer` reçoit `max_context_tokens`. BM25 : les tokens du `file_path` sont ajoutés aux tokens de chaque chunk dans `tokenize_text` (`text` inchangé) | 68,7 % | 83,0 % |
+
+| 2026-10-20 | 6 (en cours) | `RagCli._check_input(query, k) -> bool` : `is_valid` + 2 `if` (type/vide pour `query`, type/`< 1` pour `k`), affiche toutes les erreurs. Utilisé dans `search` et `answer`. Testé : `""`, `"   "`, `123`, `k=0/abc/2.5`, sans traceback. `index` : `try/except ValueError` + `return` autour de `chunk_corpus` (`--raw_path` inexistant → message). `search` / `answer` : `try/except (ValueError, FileNotFoundError)` + `return` autour de `_load_bm25` (choix : erreurs attrapées dans `rag_cli.py`, pas dans `path.py`). `search_dataset` : un seul `try` autour de `load_dataset` + `_load_bm25`, message avec les 2 chemins. Reste : `evaluate`, `answer_dataset` | 68,7 % | 83,0 % |
+
+**Reste étape 5** : rien (vérifier les docstrings à l'étape 6).
 **Noté pour l'étape 6** : Fire expose `chunkcorpus`, `pathfile`, `evaluator` comme groupes de commandes (attributs publics de `RagCli`).
 
 **Prochaine étape (où reprendre)** : itérer **une chose à la fois** pour gagner de la marge sur docs
-(82,0 %, seuil 80 % ; recall@10 = 86 %), en mesurant avec `evaluate` après chaque essai.
+(83,0 %, seuil 80 %), en mesurant avec `evaluate` après chaque essai.
 À prévoir (étape 6, pas de traceback) : `search` avec `k <= 0` ou une question vide ; `index --raw_path` inexistant
 (`ValueError` non attrapée) ; `load` / `load_dataset` / `load_results` sur fichier absent ou JSON cassé (`ValidationError`) ;
 `recall_dataset` sur un dataset vide (division par zéro).
