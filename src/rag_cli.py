@@ -187,7 +187,9 @@ class RagCli:
                 - query -> question posee
                 - k -> nombre de chunk a retourner
                 - index_path -> chemin fichier sont stcker les chunks pour
-                BM25"""
+                  BM25
+                - max_new_tokens -> Permet de recouper la longhueur maximale
+                  de la reponse ecrite par qwen"""
 
         generator: QwenGenerator = QwenGenerator()
         bm25: Bm25Index = self._load_bm25(index_path)
@@ -214,9 +216,16 @@ class RagCli:
                   produit par la fonction search_dataset
                 - save_directory -> dossier ou est stocker le fichier des
                   reponses
+<<<<<<< HEAD
                 - max_context_tokens -> prend les 1000 meilleurs token pour
                 raccourcir le delais d'attente
                 - max_context_tokens """
+=======
+                - max_new_tokens -> Permet de recouper la longhueur maximale
+                  de la reponse ecrite par qwen
+                - max_context_tokens -> permet de dminuer le nombre de token
+                  en selectionnant x meilleur token choisis par bm25"""
+>>>>>>> e4ae7a6 (rag-cli corriger)
 
         student: StudentSearchResults = self.pathfile.load_results(
             Path(student_search_results_path)
