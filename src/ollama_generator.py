@@ -70,7 +70,7 @@ class OllamaGenerator(QwenGenerator):
             model=self.model_ollama,
             messages=messages,
             think=False,
-            options={"num_perdict": max_new_tokens},
+            options={"num_predict": max_new_tokens},
         )
         if not reponse.message.content:
             generate_answer: str = ""

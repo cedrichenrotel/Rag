@@ -12,7 +12,6 @@ ANSWER_DIR := data/output/search_results_and_answer/UnansweredQuestions
 SEARCH_RESULT := $(SEARCH_DIR)/dataset_$(DATASET)_public.json
 K := 10
 
-
 .PHONY: install run debug clean lint lint-strict index search_dataset evaluate answer_dataset
 
 install:

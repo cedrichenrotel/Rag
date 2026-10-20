@@ -232,7 +232,9 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 
 | 2026-10-16 | 5 (en cours) | `answer_dataset` : `load_results` → Qwen chargé 1 fois → par question, `_read_source` (relit `data/raw` avec `read_file` + tranche `[first:last]`) sur chaque source → `generate_answer` → `MinimalAnswer` (id recopié) → `StudentSearchResultsAndAnswer(k=student.k)` → `save_result` (type élargi avec `\|`). Test sur 3 questions : 33 s, réponses cohérentes | 61,6 % | 82,0 % |
 
-**Reste étape 5** : barre `tqdm` dans `answer_dataset` (~10 s/question → ~15 min pour 100) ; `max_new_tokens` / `max_context_tokens` pas encore en arguments CLI de `answer` ; docstring d'`answer_dataset` (nouveaux paramètres).
+| 2026-10-20 | 5 (en cours) | `OllamaGenerator` (hérite de `QwenGenerator`, `ollama.chat` avec `num_predict`) branché dans `answer_dataset` **uniquement** (choix : pas de bool `use_ollama`). `answer` reste sur `QwenGenerator`. `make install` installe Ollama + `pull qwen3:0.6b`. Test 3 questions : **3 s/question** (contre ~10 s avec transformers), réponses correctes. flake8 + mypy propres | 61,6 % | 82,0 % |
+
+**Reste étape 5** : `max_context_tokens` pas en argument CLI de `answer` ; docstring d'`answer_dataset` (nouveaux paramètres).
 **Noté pour l'étape 6** : Fire expose `chunkcorpus`, `pathfile`, `evaluator` comme groupes de commandes (attributs publics de `RagCli`).
 
 **Prochaine étape (où reprendre)** : itérer **une chose à la fois** pour gagner de la marge sur docs

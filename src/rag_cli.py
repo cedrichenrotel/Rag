@@ -14,6 +14,7 @@ from src.model import (
     StudentSearchResults,
     StudentSearchResultsAndAnswer,
 )
+from src.ollama_generator import OllamaGenerator
 from src.path import PathFile
 from src.qwen_generator import QwenGenerator
 
@@ -212,12 +213,15 @@ class RagCli:
                 - student_search_results_path -> chemin du fichier JSON
                   produit par la fonction search_dataset
                 - save_directory -> dossier ou est stocker le fichier des
-                  reponses"""
+                  reponses
+                - max_new_tokens -> prend les 100 meilleurs token pour raccourcir
+                le delais d'attente
+                - """
 
         student: StudentSearchResults = self.pathfile.load_results(
             Path(student_search_results_path)
         )
-        generator: QwenGenerator = QwenGenerator()
+        generator: OllamaGenerator = OllamaGenerator()
 
         list_minimalanswer: list[MinimalAnswer] = []
         for result in tqdm.tqdm(student.search_results, desc="Answering"):
@@ -238,8 +242,9 @@ class RagCli:
             )
 
         student_result: StudentSearchResultsAndAnswer = (
-            StudentSearchResultsAndAnswer(search_results=list_minimalanswer,
-                                          k=student.k)
+            StudentSearchResultsAndAnswer(
+                search_results=list_minimalanswer, k=student.k
+            )
         )
         output_path: Path = (
             Path(save_directory) / Path(student_search_results_path).name
