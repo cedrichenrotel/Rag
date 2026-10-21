@@ -246,9 +246,15 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 
 | 2026-10-21 | 6 (en cours) | `answer_dataset` : `try/except` + `return` autour de `load_results` ; dans la boucle des sources, `try/except (ValueError, FileNotFoundError)` + `[WARNING]` + `continue` autour de `_read_source` (une source absente ne fait pas perdre les réponses déjà faites). Testé : fichier absent, `{bad`, source `nope.md` → réponse « no information in the context », fichier sauvegardé | 68,7 % | 83,0 % |
 
+| 2026-10-21 | 6 (en cours) | Bilan complet vs sujet : index 3 s, 199 questions en 23 s, moulinette valide. `moulinette` retirée de git (`git rm --cached`, `.gitignore` : `moulinette` sans `/`). `index` refuse `max_chunk_size` non `int`, `bool` ou hors 1-2000 ; `_check_k` refuse aussi les `bool` (`True` = 1). E203 corrigé (slice reformaté par ruff). Reste : `save_result` sans `try`, docstrings manquantes, tqdm dans `search_dataset`, README (l'actuel est celui de la moulinette !) | 68,7 % | 83,0 % |
+
+| 2026-10-21 | 6 (en cours) | `save_result` dans un `try/except (ValueError, OSError)` + `return` dans `search_dataset` et `answer_dataset` (`OSError` couvre `FileNotFoundError` et `PermissionError`). Testé : `/proc/x`, `/root`, `/root/x` | 68,7 % | 83,0 % |
+
+| 2026-10-21 | 6 (en cours) | tqdm dans `search_dataset` (sur la boucle des questions ; 1er essai = boucle ajoutée au-dessus → 100×100 recherches). docs 100 q en 10 s, code 99 q en 13 s, moulinette valide | 68,7 % | 83,0 % |
+
 **Reste étape 5** : rien (vérifier les docstrings à l'étape 6).
 
 **Prochaine étape (où reprendre)** : itérer **une chose à la fois** pour gagner de la marge sur docs
 (83,0 %, seuil 80 %), en mesurant avec `evaluate` après chaque essai.
 Robustesse (étape 6) : fait pour les 6 commandes (query vide, k invalide, chemins absents, JSON cassé, dataset vide, source absente).
-Reste étape 6 : docstrings, README.
+Reste étape 6 : docstrings (`CutChunk`, `PathFile`, `RagCliUtils`, 3 `__init__`, `main`), README à écrire.

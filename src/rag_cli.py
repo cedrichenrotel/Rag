@@ -40,6 +40,17 @@ class RagCli(RagCliUtils):
             - raw_path -> donnee brut
             - index_path -> fichier stock resultat index"""
 
+        if (
+            not isinstance(max_chunk_size, int)
+            or isinstance(max_chunk_size, bool)
+            or not 1 <= max_chunk_size <= 2000
+        ):
+            print(
+                "[ERROR] index: max_chunk_size must be an int "
+                "between 1 and 2000"
+            )
+            return
+
         try:
             list_chunk: list[Chunk] = self._chunkcorpus.chunk_corpus(
                 Path(raw_path), max_chunk_size
@@ -97,14 +108,13 @@ class RagCli(RagCliUtils):
                 Path(dataset_path)
             )
             bm25: Bm25Index = self._load_bm25(index_path)
-        except (ValueError, FileNotFoundError) as e:
+        except (ValueError, OSError) as e:
             print(
                 f"[ERROR] search_dataset: {dataset_path}|{index_path} -> {e}"
             )
             return
         list_results: list[MinimalSearchResults] = []
-
-        for question in dataset.rag_questions:
+        for question in tqdm.tqdm(dataset.rag_questions, desc="searching"):
             top_chunks: list[Chunk] = bm25.search(question.question, k)
             sources: list[MinimalSource] = self._to_sources(top_chunks)
             result: MinimalSearchResults = MinimalSearchResults(
@@ -117,7 +127,11 @@ class RagCli(RagCliUtils):
             search_results=list_results, k=k
         )
         output_path: Path = Path(save_directory) / Path(dataset_path).name
-        self._pathfile.save_result(student_result, output_path)
+        try:
+            self._pathfile.save_result(student_result, output_path)
+        except (ValueError, OSError) as e:
+            print(f"[ERROR] search_dataset: {save_directory} -> {e}")
+            return
 
     def answer(
         self,
@@ -144,7 +158,7 @@ class RagCli(RagCliUtils):
 
         try:
             bm25: Bm25Index = self._load_bm25(index_path)
-        except (ValueError, FileNotFoundError) as e:
+        except (ValueError, FileNotFoundError, OSError) as e:
             print(f"[ERROR] answer: {e}")
             return
         generator: QwenGenerator = QwenGenerator()
@@ -180,7 +194,7 @@ class RagCli(RagCliUtils):
             student: StudentSearchResults = self._pathfile.load_results(
                 Path(student_search_results_path)
             )
-        except (ValueError, FileNotFoundError) as e:
+        except (ValueError, OSError) as e:
             print(f"[ERROR] answer_dataset: {e}")
 
         generator: QwenGenerator = self._choose_generator()
@@ -191,7 +205,7 @@ class RagCli(RagCliUtils):
             for source in result.retrieved_sources:
                 try:
                     text: str = self._read_source(source)
-                except (ValueError, FileNotFoundError) as e:
+                except (ValueError, OSError) as e:
                     print(f"[WARNING] answer_dataset: {e}")
                     continue
                 list_text.append(text)
@@ -215,7 +229,11 @@ class RagCli(RagCliUtils):
         output_path: Path = (
             Path(save_directory) / Path(student_search_results_path).name
         )
-        self._pathfile.save_result(student_result, output_path)
+        try:
+            self._pathfile.save_result(student_result, output_path)
+        except (ValueError, OSError) as e:
+            print(f"[ERROR] answer_dataset: {save_directory} -> {e}")
+            return
 
     def evaluate(
         self,

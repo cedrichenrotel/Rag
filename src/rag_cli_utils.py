@@ -44,7 +44,7 @@ class RagCliUtils:
         """
 
         is_valid: bool = True
-        if not isinstance(k, int) or k < 1:
+        if not isinstance(k, int) or isinstance(k, bool) or k < 1:
             print(f"[ERROR] _check_k: {k}.")
             is_valid = False
         return is_valid
