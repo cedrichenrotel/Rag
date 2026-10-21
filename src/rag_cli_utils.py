@@ -3,12 +3,17 @@ from pathlib import Path
 import ollama
 
 from src.bm25_index import Bm25Index
+from src.corpus import ChunkCorpus
 from src.model import Chunk, MinimalSource
 from src.ollama_generator import OllamaGenerator
+from src.path import PathFile
 from src.qwen_generator import QwenGenerator
 
 
 class RagCliUtils:
+    def __init__(self) -> None:
+        self._chunkcorpus: ChunkCorpus = ChunkCorpus()
+        self._pathfile: PathFile = PathFile()
 
     def _check_query(self, query: str) -> bool:
         """verifie le bon typage et les bonne valeur de query
@@ -72,7 +77,7 @@ class RagCliUtils:
             str: retourne le passage entre les 2 index
         """
 
-        text: str = self.chunkcorpus.read_file(Path(source.file_path))
+        text: str = self._chunkcorpus.read_file(Path(source.file_path))
         return text[source.first_character_index:source.last_character_index]
 
     def _print_result(
@@ -131,6 +136,6 @@ class RagCliUtils:
             - index_path -> chemin du fichier d'index
         return: le Bm25Index pret a recevoir des questions"""
 
-        list_chunk: list[Chunk] = self.pathfile.load(Path(path))
+        list_chunk: list[Chunk] = self._pathfile.load(Path(path))
         bm25: Bm25Index = Bm25Index(list_chunk)
         return bm25

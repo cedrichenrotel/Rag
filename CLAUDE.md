@@ -238,12 +238,17 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 
 | 2026-10-20 | 6 (en cours) | `RagCli._check_input(query, k) -> bool` : `is_valid` + 2 `if` (type/vide pour `query`, type/`< 1` pour `k`), affiche toutes les erreurs. Utilisé dans `search` et `answer`. Testé : `""`, `"   "`, `123`, `k=0/abc/2.5`, sans traceback. `index` : `try/except ValueError` + `return` autour de `chunk_corpus` (`--raw_path` inexistant → message). `search` / `answer` : `try/except (ValueError, FileNotFoundError)` + `return` autour de `_load_bm25` (choix : erreurs attrapées dans `rag_cli.py`, pas dans `path.py`). `search_dataset` : un seul `try` autour de `load_dataset` + `_load_bm25`, message avec les 2 chemins. Reste : `evaluate`, `answer_dataset` | 68,7 % | 83,0 % |
 
+| 2026-10-21 | 6 (en cours) | `chunkcorpus` et `pathfile` créés dans `RagCliUtils.__init__` (utilisés par `_read_source` / `_load_bm25`), `RagCli.__init__` appelle `super().__init__()` et garde seulement `evaluator`. Imports inutiles retirés. `make lint` propre | 68,7 % | 83,0 % |
+
+| 2026-10-21 | 6 (en cours) | `evaluate` : un seul `try/except (ValueError, FileNotFoundError)` + `return` autour des 2 chargements (JSON cassé = `JSONDecodeError`, sous-classe de `ValueError`) ; `if not dataset.rag_questions` + `return` avant `score` (choix : `if` plutôt que `except ZeroDivisionError`). Testé : fichier absent, `{bad`, `{"rag_questions": []}`. `sys.exit(1)` envisagé puis **écarté** (choix : `return` suffit, le sujet demande seulement pas de traceback) | 68,7 % | 83,0 % |
+
+| 2026-10-21 | 6 (en cours) | Attributs renommés `_chunkcorpus`, `_pathfile`, `_evaluator` → Fire n'affiche plus que les 6 commandes (vérifié avec `uv run python -m src` sans argument ; `-- --help` montre la classe sans la construire) | 68,7 % | 83,0 % |
+
+| 2026-10-21 | 6 (en cours) | `answer_dataset` : `try/except` + `return` autour de `load_results` ; dans la boucle des sources, `try/except (ValueError, FileNotFoundError)` + `[WARNING]` + `continue` autour de `_read_source` (une source absente ne fait pas perdre les réponses déjà faites). Testé : fichier absent, `{bad`, source `nope.md` → réponse « no information in the context », fichier sauvegardé | 68,7 % | 83,0 % |
+
 **Reste étape 5** : rien (vérifier les docstrings à l'étape 6).
-**Noté pour l'étape 6** : Fire expose `chunkcorpus`, `pathfile`, `evaluator` comme groupes de commandes (attributs publics de `RagCli`).
 
 **Prochaine étape (où reprendre)** : itérer **une chose à la fois** pour gagner de la marge sur docs
 (83,0 %, seuil 80 %), en mesurant avec `evaluate` après chaque essai.
-À prévoir (étape 6, pas de traceback) : `search` avec `k <= 0` ou une question vide ; `index --raw_path` inexistant
-(`ValueError` non attrapée) ; `load` / `load_dataset` / `load_results` sur fichier absent ou JSON cassé (`ValidationError`) ;
-`recall_dataset` sur un dataset vide (division par zéro).
-Reste aussi : type de retour à mettre sur `answer_dataset` quand il sera décommenté.
+Robustesse (étape 6) : fait pour les 6 commandes (query vide, k invalide, chemins absents, JSON cassé, dataset vide, source absente).
+Reste étape 6 : docstrings, README.

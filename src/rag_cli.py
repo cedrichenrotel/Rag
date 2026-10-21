@@ -3,7 +3,6 @@ from pathlib import Path
 import tqdm
 
 from src.bm25_index import Bm25Index
-from src.corpus import ChunkCorpus
 from src.evaluate import Evaluator
 from src.model import (
     Chunk,
@@ -14,7 +13,6 @@ from src.model import (
     StudentSearchResults,
     StudentSearchResultsAndAnswer,
 )
-from src.path import PathFile
 from src.qwen_generator import QwenGenerator
 from src.rag_cli_utils import RagCliUtils
 
@@ -25,9 +23,8 @@ class RagCli(RagCliUtils):
     transformera"""
 
     def __init__(self) -> None:
-        self.chunkcorpus: ChunkCorpus = ChunkCorpus()
-        self.pathfile: PathFile = PathFile()
-        self.evaluator: Evaluator = Evaluator()
+        super().__init__()
+        self._evaluator: Evaluator = Evaluator()
 
     def index(
         self,
@@ -44,14 +41,14 @@ class RagCli(RagCliUtils):
             - index_path -> fichier stock resultat index"""
 
         try:
-            list_chunk: list[Chunk] = self.chunkcorpus.chunk_corpus(
+            list_chunk: list[Chunk] = self._chunkcorpus.chunk_corpus(
                 Path(raw_path), max_chunk_size
             )
         except ValueError as e:
             print(f"Index: {e}")
             return
 
-        self.pathfile.save(list_chunk, Path(index_path))
+        self._pathfile.save(list_chunk, Path(index_path))
 
     def search(
         self,
@@ -96,7 +93,7 @@ class RagCli(RagCliUtils):
         if not self._check_k(k):
             return
         try:
-            dataset: RagDataset = self.pathfile.load_dataset(
+            dataset: RagDataset = self._pathfile.load_dataset(
                 Path(dataset_path)
             )
             bm25: Bm25Index = self._load_bm25(index_path)
@@ -120,7 +117,7 @@ class RagCli(RagCliUtils):
             search_results=list_results, k=k
         )
         output_path: Path = Path(save_directory) / Path(dataset_path).name
-        self.pathfile.save_result(student_result, output_path)
+        self._pathfile.save_result(student_result, output_path)
 
     def answer(
         self,
@@ -179,16 +176,24 @@ class RagCli(RagCliUtils):
                 - max_context_tokens -> les meilleurs chunks tant que le total
                   reste sous ce nombre de tokens"""
 
-        student: StudentSearchResults = self.pathfile.load_results(
-            Path(student_search_results_path)
-        )
+        try:
+            student: StudentSearchResults = self._pathfile.load_results(
+                Path(student_search_results_path)
+            )
+        except (ValueError, FileNotFoundError) as e:
+            print(f"[ERROR] answer_dataset: {e}")
+
         generator: QwenGenerator = self._choose_generator()
 
         list_minimalanswer: list[MinimalAnswer] = []
         for result in tqdm.tqdm(student.search_results, desc="Answering"):
             list_text: list[str] = []
             for source in result.retrieved_sources:
-                text: str = self._read_source(source)
+                try:
+                    text: str = self._read_source(source)
+                except (ValueError, FileNotFoundError) as e:
+                    print(f"[WARNING] answer_dataset: {e}")
+                    continue
                 list_text.append(text)
             answer: str = generator.generate_answer(
                 result.question, list_text, max_new_tokens, max_context_tokens
@@ -210,7 +215,7 @@ class RagCli(RagCliUtils):
         output_path: Path = (
             Path(save_directory) / Path(student_search_results_path).name
         )
-        self.pathfile.save_result(student_result, output_path)
+        self._pathfile.save_result(student_result, output_path)
 
     def evaluate(
         self,
@@ -230,9 +235,18 @@ class RagCli(RagCliUtils):
 
         if not self._check_k(k):
             return
-        dataset: RagDataset = self.pathfile.load_dataset(Path(dataset_path))
-        student: StudentSearchResults = self.pathfile.load_results(
-            Path(student_search_results_path)
-        )
-        score: float = self.evaluator.recall_dataset(dataset, student, k)
+        try:
+            dataset: RagDataset = self._pathfile.load_dataset(
+                Path(dataset_path)
+            )
+            student: StudentSearchResults = self._pathfile.load_results(
+                Path(student_search_results_path)
+            )
+        except (ValueError, FileNotFoundError) as e:
+            print(f"[ERROR] evaluate: {e}")
+            return
+        if not dataset.rag_questions:
+            print(f"[ERROR] evaluate: dataset see: {dataset_path}")
+            return
+        score: float = self._evaluator.recall_dataset(dataset, student, k)
         print(f"recall@: {score:.1%}")

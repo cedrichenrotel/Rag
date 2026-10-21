@@ -3,7 +3,7 @@ __pycache__/
 *.py[codz]
 *$py.class
 data/
-moulinette/
+moulinette
 en.subject_RAG.pdf
 
 # C extensions
