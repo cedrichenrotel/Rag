@@ -1,3 +1,27 @@
+# Description
+
+RAG(Retrieval, Augmented, Generation) permet a un model de language de repondre a une question a partir de donnee locals.
+Cela ce fait en plusieurs etapes:
+    ETAPE 1 triage et stockage data:
+  . pres trie des donnees: Garde tous les fichiers .txt, .py .md qui contiendrais des informations pouvant repondre a la question
+  . chunk et sauvegarde: Decoupe du contenu du fichier en paquet de 2000 caracteres maximum (chunk).
+      - fichier.py: la decoupe ce fait a chaque 'def ', 'class '
+      - fichier.md/.txt: la decoupe ce fait a chqaue '#'
+      Si un fichier n'a aucun préfixe, il forme une seule section, qui n'est recoupée que si elle dépasse 2000
+      Les chunks sont ensuite sauvegarder dans data/processed/index.json qui sera stocker:
+      - le chemin du fichier
+      - la position du premier et dernier caractere
+      - le passage du texte
+    ETAPE 2 recherche
+  . token: tout le contenu du chunk(morceau du texte) et la question sera convertis en minuscule et sera decoupe pour en faire une liste de mot. Cela permettra pour l'etape suivante de comparer les mots de la question aux mot de chaque chunk du token. 
+
+  -Pourquoi?:
+    Certains model telle que Qwen sont des petits model dont sont apprentissage est tres limiter(il ne connais pas ce qui est sortie apres sont entrainement).
+    Si une question specifique lui est posée et que la reponse n'est pas dans sa donnee, celui-ci en inventera
+    une. on appelle ca une hallucination.
+    RAG reduit ce phenomene en lui permettant de recuperer des informations contenu dans une base donnee local pour qu'il puisse repondre au mieu.
+
+
 # Moulinette
 
 

@@ -257,4 +257,6 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 **Prochaine étape (où reprendre)** : itérer **une chose à la fois** pour gagner de la marge sur docs
 (83,0 %, seuil 80 %), en mesurant avec `evaluate` après chaque essai.
 Robustesse (étape 6) : fait pour les 6 commandes (query vide, k invalide, chemins absents, JSON cassé, dataset vide, source absente).
+Pistes recherche (à tester après le README, une à la fois) : 1) régler `k1`/`b` de `BM25Okapi` (recommandé en premier) ; 2) ajouter les mots du titre `#` aux tokens des chunks md recoupés ; 3) `max_chunk_size` plus petit (~1000). Essai rejeté : `"""` dans les préfixes Python → code 68,7 % (=), docs 81,0 % (−2), 35 519 chunks.
+README : en cours (révision + rédaction en français section par section, Claude traduit en anglais à la fin). Fait : Description (pourquoi RAG, pré-tri, découpage et sauvegarde).
 Reste étape 6 : docstrings (`CutChunk`, `PathFile`, `RagCliUtils`, 3 `__init__`, `main`), README à écrire.
