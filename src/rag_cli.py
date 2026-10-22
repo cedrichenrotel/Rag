@@ -196,29 +196,39 @@ class RagCli(RagCliUtils):
             )
         except (ValueError, OSError) as e:
             print(f"[ERROR] answer_dataset: {e}")
+            return
 
         generator: QwenGenerator = self._choose_generator()
 
         list_minimalanswer: list[MinimalAnswer] = []
-        for result in tqdm.tqdm(student.search_results, desc="Answering"):
-            list_text: list[str] = []
-            for source in result.retrieved_sources:
-                try:
-                    text: str = self._read_source(source)
-                except (ValueError, OSError) as e:
-                    print(f"[WARNING] answer_dataset: {e}")
-                    continue
-                list_text.append(text)
-            answer: str = generator.generate_answer(
-                result.question, list_text, max_new_tokens, max_context_tokens
-            )
-            list_minimalanswer.append(
-                MinimalAnswer(
-                    question_id=result.question_id,
-                    question=result.question,
-                    retrieved_sources=result.retrieved_sources,
-                    answer=answer,
+        try:
+            for result in tqdm.tqdm(student.search_results, desc="Answering"):
+                list_text: list[str] = []
+                for source in result.retrieved_sources:
+                    try:
+                        text: str = self._read_source(source)
+                    except (ValueError, OSError) as e:
+                        print(f"[WARNING] answer_dataset: {e}")
+                        continue
+                    list_text.append(text)
+                answer: str = generator.generate_answer(
+                    result.question,
+                    list_text,
+                    max_new_tokens,
+                    max_context_tokens,
                 )
+                list_minimalanswer.append(
+                    MinimalAnswer(
+                        question_id=result.question_id,
+                        question=result.question,
+                        retrieved_sources=result.retrieved_sources,
+                        answer=answer,
+                    )
+                )
+        except KeyboardInterrupt:
+            print(
+                "[WARNING] answer_dataset: stopped, saving "
+                f"{len(list_minimalanswer)} answers"
             )
 
         student_result: StudentSearchResultsAndAnswer = (
