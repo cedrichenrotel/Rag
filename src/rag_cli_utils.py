@@ -28,7 +28,7 @@ class RagCliUtils:
 
         is_valid: bool = True
         if not isinstance(query, str) or query.strip() == "":
-            print(f"[ERROR] _check_query: {query}.")
+            print("[ERROR] query must be a non-empty string.")
             is_valid = False
         return is_valid
 
@@ -45,7 +45,7 @@ class RagCliUtils:
 
         is_valid: bool = True
         if not isinstance(k, int) or isinstance(k, bool) or k < 1:
-            print(f"[ERROR] _check_k: {k}.")
+            print(f"[ERROR] k must be an integer >= 1 (got {k})")
             is_valid = False
         return is_valid
 

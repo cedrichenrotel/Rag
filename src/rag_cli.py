@@ -55,7 +55,7 @@ class RagCli(RagCliUtils):
             list_chunk: list[Chunk] = self._chunkcorpus.chunk_corpus(
                 Path(raw_path), max_chunk_size
             )
-        except ValueError as e:
+        except (ValueError, FileNotFoundError) as e:
             print(f"Index: {e}")
             return
 
@@ -114,7 +114,7 @@ class RagCli(RagCliUtils):
             )
             return
         list_results: list[MinimalSearchResults] = []
-        for question in tqdm.tqdm(dataset.rag_questions, desc="searching"):
+        for question in tqdm.tqdm(dataset.rag_questions, desc="Searching"):
             top_chunks: list[Chunk] = bm25.search(question.question, k)
             sources: list[MinimalSource] = self._to_sources(top_chunks)
             result: MinimalSearchResults = MinimalSearchResults(
@@ -267,4 +267,4 @@ class RagCli(RagCliUtils):
             print(f"[ERROR] evaluate: dataset see: {dataset_path}")
             return
         score: float = self._evaluator.recall_dataset(dataset, student, k)
-        print(f"recall@: {score:.1%}")
+        print(f"recall@{k}: {score:.1%}")

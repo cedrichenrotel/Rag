@@ -11,7 +11,7 @@ class Bm25Index:
     def __init__(self, list_chunks: list[Chunk]) -> None:
         self.list_chunks: list[Chunk] = list_chunks
         self.tokenizer: Tokenizer = Tokenizer()
-        self.bm25: BM25Okapi = BM25Okapi(self.tokenize_text())
+        self.bm25: BM25Okapi = BM25Okapi(self.tokenize_text(), k1=1)
 
     def tokenize_text(self) -> list[list[str]]:
         """Convertir le chunks.texte et chunks.path en une liste de token"""

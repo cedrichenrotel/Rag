@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import tqdm
+
 from src.chunk import CutChunk
 from src.model import Chunk
 
@@ -51,7 +53,7 @@ class ChunkCorpus:
         cutchunk: CutChunk = CutChunk()
         list_chunks: list[Chunk] = []
 
-        for path in path_list:
+        for path in tqdm.tqdm(path_list, desc="Indexing"):
             text: str = self.read_file(path)
             suffix: str = path.suffix
 

@@ -252,11 +252,15 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 
 | 2026-10-21 | 6 (en cours) | tqdm dans `search_dataset` (sur la boucle des questions ; 1er essai = boucle ajoutée au-dessus → 100×100 recherches). docs 100 q en 10 s, code 99 q en 13 s, moulinette valide | 68,7 % | 83,0 % |
 
+| 2026-10-22 | 6 (en cours) | README mis au propre (Markdown, orthographe, section moulinette retirée) ; sections Resources, Chunking strategy, Retrieval method écrites. tqdm `Indexing` dans `chunk_corpus` (boucle des fichiers). `index` attrape aussi `FileNotFoundError` (dossier sans `.py`/`.md`/`.txt` → traceback avant). `make lint` propre | 68,7 % | 83,0 % |
+
+| 2026-10-22 | 4 (itération) | Messages d'erreur `_check_query` / `_check_k` clarifiés (`[ERROR] ... (got {k})`), `recall@{k}` affiché. BM25 : **`k1=1` gardé** (code +3). Essais rejetés : `b=0.5` (code 68,7 %), `b=0.9` (code 70,7 %) ; titre de section ajouté aux tokens pour tous les fichiers (docs 84,0 %, code 69,7 %) puis seulement `.md`/`.txt` (docs 83,0 %, code 70,7 %) → retiré (`git checkout` de `chunk.py`/`model.py`). README : toutes les sections écrites en français | 71,7 % | 83,0 % |
+
 **Reste étape 5** : rien (vérifier les docstrings à l'étape 6).
 
 **Prochaine étape (où reprendre)** : itérer **une chose à la fois** pour gagner de la marge sur docs
 (83,0 %, seuil 80 %), en mesurant avec `evaluate` après chaque essai.
 Robustesse (étape 6) : fait pour les 6 commandes (query vide, k invalide, chemins absents, JSON cassé, dataset vide, source absente).
-Pistes recherche (à tester après le README, une à la fois) : 1) régler `k1`/`b` de `BM25Okapi` (recommandé en premier) ; 2) ajouter les mots du titre `#` aux tokens des chunks md recoupés ; 3) `max_chunk_size` plus petit (~1000). Essai rejeté : `"""` dans les préfixes Python → code 68,7 % (=), docs 81,0 % (−2), 35 519 chunks.
-README : en cours (révision + rédaction en français section par section, Claude traduit en anglais à la fin). Fait : Description (pourquoi RAG, pré-tri, découpage et sauvegarde).
+Pistes recherche : 1) `k1`/`b` : fait (`k1=1`) ; 2) titre `#` : rejeté ; 3) `max_chunk_size` plus petit (~1000) : reste à tester. Essai rejeté : `"""` dans les préfixes Python → code 68,7 % (=), docs 81,0 % (−2), 35 519 chunks.
+README : en cours (révision + rédaction en français section par section, Claude traduit en anglais à la fin). Fait : Description (pourquoi RAG, pré-tri, découpage et sauvegarde, tokens, BM25 + tri, génération : prompt/context/question, Ollama). À mettre dans Design decisions : fallback `_choose_generator` + Ollama seulement dans `answer_dataset`. Instructions : fait (install, Ollama, pipeline, raccourcis Makefile). Resources, Chunking strategy, Retrieval method : faites (2026-10-22). Suivant : Performance analysis (relancer les mesures d'abord), puis Design decisions, Challenges faced, Example usage. System architecture : premier jet écrit par Claude (schéma du flux + 1 ligne par fichier), à faire valider par questions.
 Reste étape 6 : docstrings (`CutChunk`, `PathFile`, `RagCliUtils`, 3 `__init__`, `main`), README à écrire.
