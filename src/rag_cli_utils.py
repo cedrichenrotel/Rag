@@ -15,6 +15,24 @@ class RagCliUtils:
         self._chunkcorpus: ChunkCorpus = ChunkCorpus()
         self._pathfile: PathFile = PathFile()
 
+    def _check_token(self, name: str, value: int) -> bool:
+        """permet de securiser Ollama en verifiant le type
+        de l'argument qui lui sera donner et sa valeur
+
+        Args:
+            name (str): nom de la variable checker
+            value (int): valeur de max_new_token ou max_context_token
+
+        Returns:
+            bool: return true si ok.
+        """
+
+        is_valid: bool = True
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+            print(f"[ERROR] {name} must be an integer >= 1 (got {value})")
+            is_valid = False
+        return is_valid
+
     def _check_query(self, query: str) -> bool:
         """verifie le bon typage et les bonne valeur de query
         creer par l'utilisateur

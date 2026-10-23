@@ -55,11 +55,10 @@ class RagCli(RagCliUtils):
             list_chunk: list[Chunk] = self._chunkcorpus.chunk_corpus(
                 Path(raw_path), max_chunk_size
             )
-        except (ValueError, FileNotFoundError) as e:
-            print(f"Index: {e}")
+            self._pathfile.save(list_chunk, Path(index_path))
+        except (ValueError, OSError) as e:
+            print(f"[ERROR] Index: {e}")
             return
-
-        self._pathfile.save(list_chunk, Path(index_path))
 
     def search(
         self,
@@ -79,7 +78,7 @@ class RagCli(RagCliUtils):
 
         try:
             bm25: Bm25Index = self._load_bm25(index_path)
-        except (ValueError, FileNotFoundError) as e:
+        except (ValueError, OSError) as e:
             print(f"[ERROR] search: {e}")
             return
         top_chunks: list[Chunk] = bm25.search(query, k)
@@ -153,12 +152,17 @@ class RagCli(RagCliUtils):
                 - max_context_token -> les meilleurs chunks tant que le total
                   reste sous ce nombre de tokens"""
 
+        if not self._check_token(
+            "max_new_tokens", max_new_tokens
+        ) or not self._check_token("max_context_tokens", max_context_tokens):
+            return
+
         if not self._check_query(query) or not self._check_k(k):
             return
 
         try:
             bm25: Bm25Index = self._load_bm25(index_path)
-        except (ValueError, FileNotFoundError, OSError) as e:
+        except (ValueError, OSError) as e:
             print(f"[ERROR] answer: {e}")
             return
         generator: QwenGenerator = QwenGenerator()
@@ -189,6 +193,11 @@ class RagCli(RagCliUtils):
                   de la reponse ecrite par qwen
                 - max_context_tokens -> les meilleurs chunks tant que le total
                   reste sous ce nombre de tokens"""
+
+        if not self._check_token(
+            "max_new_tokens", max_new_tokens
+        ) or not self._check_token("max_context_tokens", max_context_tokens):
+            return
 
         try:
             student: StudentSearchResults = self._pathfile.load_results(
@@ -270,7 +279,7 @@ class RagCli(RagCliUtils):
             student: StudentSearchResults = self._pathfile.load_results(
                 Path(student_search_results_path)
             )
-        except (ValueError, FileNotFoundError) as e:
+        except (ValueError, OSError) as e:
             print(f"[ERROR] evaluate: {e}")
             return
         if not dataset.rag_questions:
