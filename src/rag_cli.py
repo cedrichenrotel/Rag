@@ -59,6 +59,7 @@ class RagCli(RagCliUtils):
         except (ValueError, OSError) as e:
             print(f"[ERROR] Index: {e}")
             return
+        print(f"{len(list_chunk)} chunks saved in {index_path}")
 
     def search(
         self,

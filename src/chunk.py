@@ -2,7 +2,7 @@ from src.model import Chunk
 
 
 class CutChunk:
-    def chunk_fixed(
+    def _chunk_fixed(
         self,
         file_path: str,
         text: str,
@@ -28,7 +28,26 @@ class CutChunk:
             )
         return chunks
 
-    def find_line_positions(self, text: str, suffix: str) -> list[int]:
+    def _merge_cuts(self, cuts: list[int], max_chunk_size: int) -> list[int]:
+        """permet de fusionner des chunks trop petit sans depasser
+        max_chunk_size
+
+        Args:
+            cuts (list[int]): liste de position d'ou commence chaque chunk
+            max_chunk_size (int): nombre d element max que peux contenir un
+            chunk
+
+        Returns:
+            list[int]: retourne une nouvelle liste cuts modifier
+        """
+        merged: list[int] = [cuts[0]]
+        for i in range(1, len(cuts) - 1):
+            if cuts[i + 1] - merged[-1] > max_chunk_size:
+                merged.append(cuts[i])
+        merged.append(cuts[-1])
+        return merged
+
+    def _find_line_positions(self, text: str, suffix: str) -> list[int]:
         """Retourne la position du premier caractere de chaque titre(#)
         fichier.md ou le prefix(class ou def) d'un fichier.py dans le texte."""
 
@@ -61,16 +80,18 @@ class CutChunk:
         commence a un titre '#' (Markdown/texte) ou a un 'def'/'class'(Python),
         selon le suffixe du fichier."""
 
-        cuts: list[int] = self.find_line_positions(text, suffix)
+        cuts: list[int] = self._find_line_positions(text, suffix)
         if not cuts or cuts[0] != 0:
             cuts.insert(0, 0)
         cuts.append(len(text))
 
         chunks: list[Chunk] = []
+        if suffix != ".py":
+            cuts = self._merge_cuts(cuts, max_chunk_size)
         for i in range(len(cuts) - 1):
             start = cuts[i]
             end = cuts[i + 1]
             chunks.extend(
-                self.chunk_fixed(file_path, text, max_chunk_size, start, end)
+                self._chunk_fixed(file_path, text, max_chunk_size, start, end)
             )
         return chunks

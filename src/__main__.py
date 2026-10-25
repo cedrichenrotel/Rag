@@ -1,6 +1,12 @@
+import sys
+
 from fire import Fire
 
-from src.rag_cli import RagCli
+try:
+    from src.rag_cli import RagCli
+except KeyboardInterrupt:
+    print("[WARNING] Forced stop")
+    sys.exit()
 
 
 def main() -> None:
@@ -9,7 +15,7 @@ def main() -> None:
         Fire(RagCli)
     except KeyboardInterrupt:
         print("[WARNING] Forced stop")
-        return
+        sys.exit()
 
 
 if __name__ == "__main__":

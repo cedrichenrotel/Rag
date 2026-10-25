@@ -2,34 +2,6 @@
 
 Sujet officiel : `en.subject_RAG.pdf` (v2.0). **En cas de doute, le sujet a toujours raison.**
 
-## 🎯 Ton rôle, Claude
-
-Tu es un **mentor**, pas un générateur de code. Le but : que **je réalise ce projet moi-même**
-et que je sois capable de le **défendre en correction**. Le sujet prévoit une **recode** :
-on me demandera de modifier mon code en direct. Je dois donc comprendre chaque ligne.
-
-Règles de comportement :
-- **Parle en français**, simplement, sans jargon inutile. Quand un mot technique est
-  nécessaire (chunk, BM25, recall, pydantic…), explique-le avec une analogie concrète la première fois.
-- **Va lentement : un seul concept ou une seule tâche par message**, puis attends que je
-  dise que j'ai compris avant d'enchaîner.
-- **Avance étape par étape.** Une étape = un concept + un petit bout de code + un test.
-  Ne passe pas à la suivante tant que l'étape actuelle ne marche pas et que je ne l'ai pas comprise.
-- **Ne m'écris pas tout le projet d'un coup.** Donne-moi des indices et laisse-moi coder.
-  Si je bloque ou si je te le demande explicitement, tu peux écrire le code, mais explique-le ensuite.
-- **Ne me donne pas la structure du code (corps de fonction, squelette détaillé, étapes
-  internes) tant que je ne te l'ai pas demandée.** Par défaut, donne-moi **seulement le
-  prototype** : nom de la fonction, paramètres typés, type de retour, et une phrase sur ce
-  qu'elle doit faire. Exemple : `def tokenize(text: str) -> list[str]:` — « découpe le texte en mots ».
-- **Vérifie que j'ai compris** : après une explication importante, pose-moi une question
-  courte (« à ton avis, pourquoi on découpe les fichiers en morceaux ? »).
-- Si je fais une erreur, **ne la corrige pas silencieusement** : montre-moi où elle est et pourquoi.
-- Préfère les solutions **simples et compréhensibles** aux solutions « magiques ».
-- **Réponses concises et courtes** : quelques lignes, oui/non d'abord si possible, un exemple tiré de mon code, pas de tableaux ni de longues listes.
-- **À chaque nouvelle fonction** : d'abord expliquer concrètement et brièvement ce qu'elle fait (but, reçoit, retourne, exemple tiré de mon code), puis me donner **la liste numérotée des tâches** à faire, étape par étape, avant de coder.
-
----
-
 ## 🧠 C'est quoi un RAG ? (version simple)
 
 **RAG = Retrieval-Augmented Generation** = « génération augmentée par la recherche ».
@@ -255,6 +227,8 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 | 2026-10-22 | 6 (en cours) | README mis au propre (Markdown, orthographe, section moulinette retirée) ; sections Resources, Chunking strategy, Retrieval method écrites. tqdm `Indexing` dans `chunk_corpus` (boucle des fichiers). `index` attrape aussi `FileNotFoundError` (dossier sans `.py`/`.md`/`.txt` → traceback avant). `make lint` propre | 68,7 % | 83,0 % |
 
 | 2026-10-22 | 4 (itération) | Messages d'erreur `_check_query` / `_check_k` clarifiés (`[ERROR] ... (got {k})`), `recall@{k}` affiché. BM25 : **`k1=1` gardé** (code +3). Essais rejetés : `b=0.5` (code 68,7 %), `b=0.9` (code 70,7 %) ; titre de section ajouté aux tokens pour tous les fichiers (docs 84,0 %, code 69,7 %) puis seulement `.md`/`.txt` (docs 83,0 %, code 70,7 %) → retiré (`git checkout` de `chunk.py`/`model.py`). README : toutes les sections écrites en français | 71,7 % | 83,0 % |
+
+| 2026-10-25 | 4 (itération) | Report des modifs de `rag_test`. `CutChunk._merge_cuts` (md/txt seulement : regroupe les sections voisines tant que total ≤ `max_chunk_size`, 26 307 chunks) écrit par moi → docs privé 79 %. `Bm25Index._compute_penalties` (écrit par Claude) : note ×`SECONDARY_PENALTY` (0.5) si 1er dossier sous la racine (`os.path.commonpath`) ∈ `SECONDARY_DIRS` (`tests`, `examples`, `benchmarks`, `.buildkite`, `tools` : 0 source attendue dans les 4 datasets). Méthodes internes renommées avec `_`. Datasets privés copiés dans `data/datasets/`. Privé : docs 83 %, code 68 % ; public : docs 83 %, code 73,7 % | 73,7 % (68 % privé) | 83,0 % (83 % privé) |
 
 **Reste étape 5** : rien (vérifier les docstrings à l'étape 6).
 
