@@ -230,6 +230,8 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 
 | 2026-10-25 | 4 (itération) | Report des modifs de `rag_test`. `CutChunk._merge_cuts` (md/txt seulement : regroupe les sections voisines tant que total ≤ `max_chunk_size`, 26 307 chunks) écrit par moi → docs privé 79 %. `Bm25Index._compute_penalties` (écrit par Claude) : note ×`SECONDARY_PENALTY` (0.5) si 1er dossier sous la racine (`os.path.commonpath`) ∈ `SECONDARY_DIRS` (`tests`, `examples`, `benchmarks`, `.buildkite`, `tools` : 0 source attendue dans les 4 datasets). Méthodes internes renommées avec `_`. Datasets privés copiés dans `data/datasets/`. Privé : docs 83 %, code 68 % ; public : docs 83 %, code 73,7 % | 73,7 % (68 % privé) | 83,0 % (83 % privé) |
 
+| 2026-10-26 | 4 (itération) | Essais **rejetés** : `bm25s` + `bm25s.tokenize` (pas de découpe snake/camelCase, code privé 49 %), découpage fixe des `.md` sans `#`. Pénalité retirée → docs privé 79 % (< 80) → **remise**. **Overlap** ajouté : `index --overlap` (% de `max_chunk_size`, 0-99, **défaut 20**), appliqué dans `_chunk_fixed` (pas = `max - max*overlap//100`), 26 790 chunks, index 2,4 s. Privé (moulinette) : sans pénalité ov 0 = 79/63, ov 10-50 = 81/59-62 ; pénalité ov 0 = 83/68, **pénalité ov 20 = 85/67** (gardé). Datasets publics absents de `data/datasets/` | 67 % privé | 85 % privé |
+
 **Reste étape 5** : rien (vérifier les docstrings à l'étape 6).
 
 **Prochaine étape (où reprendre)** : itérer **une chose à la fois** pour gagner de la marge sur docs

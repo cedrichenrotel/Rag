@@ -31,6 +31,7 @@ class RagCli(RagCliUtils):
         max_chunk_size: int = 2000,
         raw_path: str = "data/raw",
         index_path: str = "data/processed/index.json",
+        overlap: int = 20,
     ) -> None:
         """Decoupe les fichiers en paquet de 2000 caracteres
         max dans data/raw/vllm-0.10.1 et sauvegarde l'index
@@ -38,7 +39,8 @@ class RagCli(RagCliUtils):
         args:
             - max_chunk_size -> taille max chunk
             - raw_path -> donnee brut
-            - index_path -> fichier stock resultat index"""
+            - index_path -> fichier stock resultat index
+            - overlap -> pourcentage (0-99) de chevauchement entre 2 chunks"""
 
         if (
             not isinstance(max_chunk_size, int)
@@ -50,10 +52,20 @@ class RagCli(RagCliUtils):
                 "between 1 and 2000"
             )
             return
+        if (
+            not isinstance(overlap, int)
+            or isinstance(overlap, bool)
+            or not 0 <= overlap <= 99
+        ):
+            print(
+                "[ERROR] index: overlap must be an int between 0 and 99 "
+                f"(got {overlap})"
+            )
+            return
 
         try:
             list_chunk: list[Chunk] = self._chunkcorpus.chunk_corpus(
-                Path(raw_path), max_chunk_size
+                Path(raw_path), max_chunk_size, overlap
             )
             self._pathfile.save(list_chunk, Path(index_path))
         except (ValueError, OSError) as e:

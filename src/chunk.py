@@ -9,14 +9,19 @@ class CutChunk:
         max_chunk_size: int,
         start: int,
         end: int,
+        overlap: int = 0,
     ) -> list[Chunk]:
         """Retourne le texte en une liste de x chunk dont la taille est de
         max_chunk_size. utilisation de la fonction min() pour recuperer le bon
-        index du dernier caractere"""
+        index du dernier caractere.
+
+        overlap: pourcentage (0-99) de max_chunk_size repris au debut du
+        chunk suivant (ex: 20 avec 2000 -> 400 caracteres en commun)"""
 
         chunks: list[Chunk] = []
+        step: int = max(1, max_chunk_size - max_chunk_size * overlap // 100)
 
-        for sub_start in range(start, end, max_chunk_size):
+        for sub_start in range(start, end, step):
             sub_end = min((sub_start + max_chunk_size), end)
             chunks.append(
                 Chunk(
@@ -26,6 +31,8 @@ class CutChunk:
                     text=text[sub_start:sub_end],
                 )
             )
+            if sub_end == end:
+                break
         return chunks
 
     def _merge_cuts(self, cuts: list[int], max_chunk_size: int) -> list[int]:
@@ -74,7 +81,12 @@ class CutChunk:
         return positions
 
     def chunk_file(
-        self, file_path: str, text: str, max_chunk_size: int, suffix: str
+        self,
+        file_path: str,
+        text: str,
+        max_chunk_size: int,
+        suffix: str,
+        overlap: int = 0,
     ) -> list[Chunk]:
         """Decoupe un texte en chunks, un par section. Une section
         commence a un titre '#' (Markdown/texte) ou a un 'def'/'class'(Python),
@@ -92,6 +104,8 @@ class CutChunk:
             start = cuts[i]
             end = cuts[i + 1]
             chunks.extend(
-                self._chunk_fixed(file_path, text, max_chunk_size, start, end)
+                self._chunk_fixed(
+                    file_path, text, max_chunk_size, start, end, overlap
+                )
             )
         return chunks

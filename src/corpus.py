@@ -38,11 +38,14 @@ class ChunkCorpus:
 
         return file.read_text(encoding="utf-8")
 
-    def chunk_corpus(self, raw_path: Path, max_chunk_size: int) -> list[Chunk]:
+    def chunk_corpus(
+        self, raw_path: Path, max_chunk_size: int, overlap: int = 0
+    ) -> list[Chunk]:
         """retourne une liste de chunk de tous le corpus
         args:
             - raw_patch: donnee brut de base
-            - max_chunk_size: taille max par chunk"""
+            - max_chunk_size: taille max par chunk
+            - overlap: pourcentage de chevauchement entre 2 chunks"""
 
         path_list: list[Path] = self.list_files(raw_path)
         if not path_list:
@@ -58,6 +61,8 @@ class ChunkCorpus:
             suffix: str = path.suffix
 
             list_chunks.extend(
-                cutchunk.chunk_file(str(path), text, max_chunk_size, suffix)
+                cutchunk.chunk_file(
+                    str(path), text, max_chunk_size, suffix, overlap
+                )
             )
         return list_chunks
