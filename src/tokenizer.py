@@ -2,14 +2,14 @@ import re
 
 
 class Tokenizer:
-    """Convertis le texte en une liste de mot
-    en minuscule"""
+    """Convert the text into a list of
+    lowercase words."""
 
     def tokenize(self, text: str) -> list[str]:
-        """coupe le texte en une liste de de mot
-        et convertis les caracteres en minuscule
+        """Split the text into a list of words
+        and convert the characters to lowercase.
 
-        text: contenu d'un token"""
+        text: text to split into tokens"""
 
         re_text: str = re.sub(r"([a-z]{2})([A-Z])", r"\1 \2", text)
         text_lowercase: str = re_text.lower()

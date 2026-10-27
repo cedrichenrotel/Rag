@@ -4,11 +4,11 @@ from pydantic import BaseModel, Field
 
 
 class MinimalSource(BaseModel):
-    """Localise un passage dans un fichier du corpus.
-    Contient:
-        - file_path -> chemin du fichier d'ou vient le passage
-        - first_character_index -> index du debut du passage
-        - last_character_index -> index de fin du passage"""
+    """Locate a passage in a file of the corpus.
+    Contains:
+        - file_path -> path of the file the passage comes from
+        - first_character_index -> index of the start of the passage
+        - last_character_index -> index of the end of the passage"""
 
     file_path: str
     first_character_index: int
@@ -16,50 +16,50 @@ class MinimalSource(BaseModel):
 
 
 class UnansweredQuestion(BaseModel):
-    """Question sans reponse.
-    Contient:
-        - question_id -> son identifiant
-        (genere automatiquement s'il est absent)
-        - question -> le texte de la question"""
+    """Question without an answer.
+    Contains:
+        - question_id -> its identifier
+        (generated automatically if missing)
+        - question -> the text of the question"""
 
     question_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     question: str
 
 
 class AnsweredQuestion(UnansweredQuestion):
-    """Question avec son corrige (herite de UnansweredQuestion).
-    Contient:
-        - sources -> liste des passages ou se trouve la reponse
-        - answer -> reponse attendue"""
+    """Question with its answer key (inherits from UnansweredQuestion).
+    Contains:
+        - sources -> list of passages where the answer is found
+        - answer -> expected answer"""
 
     sources: list[MinimalSource]
     answer: str
 
 
 class RagDataset(BaseModel):
-    """Contenu d'un fichier de dataset.
-    Contient:
-        - rag_questions -> liste des questions du fichier,
-        avec ou sans corrige"""
+    """Content of a dataset file.
+    Contains:
+        - rag_questions -> list of the questions of the file,
+        with or without an answer key"""
 
     rag_questions: list[AnsweredQuestion | UnansweredQuestion]
 
 
 class Chunk(MinimalSource):
-    """Morceau d'un fichier du corpus (herite de MinimalSource).
-    Contient:
-        - text -> texte compris entre les deux index du passage"""
+    """Piece of a file of the corpus (inherits from MinimalSource).
+    Contains:
+        - text -> text between the two indexes of the passage"""
 
     text: str
 
 
 class MinimalSearchResults(BaseModel):
-    """Resultat de recherche d'une question.
-    Contient:
-        - question_id -> identifiant de la question
-        - question -> le texte de la question
-        - retrieved_sources -> liste des passages trouves
-        (fichier, index debut et fin)"""
+    """Search result for one question.
+    Contains:
+        - question_id -> identifier of the question
+        - question -> the text of the question
+        - retrieved_sources -> list of the passages found
+        (file, start and end index)"""
 
     question_id: str
     question: str
@@ -67,30 +67,30 @@ class MinimalSearchResults(BaseModel):
 
 
 class MinimalAnswer(MinimalSearchResults):
-    """Resultat de recherche d'une question, avec sa reponse
-    (herite de MinimalSearchResults).
-    Contient:
-        - answer -> reponse redigee par Qwen (modele de langage)"""
+    """Search result for one question, with its answer
+    (inherits from MinimalSearchResults).
+    Contains:
+        - answer -> answer written by Qwen (language model)"""
 
     answer: str
 
 
 class StudentSearchResults(BaseModel):
-    """Contenu du fichier produit par search_dataset.
-    Contient:
-        - search_results -> liste de MinimalSearchResults,
-        un par question
-        - k -> nombre de passages gardes pour chaque question"""
+    """Content of the file produced by search_dataset.
+    Contains:
+        - search_results -> list of MinimalSearchResults,
+        one per question
+        - k -> number of passages kept for each question"""
 
     search_results: list[MinimalSearchResults]
     k: int
 
 
 class StudentSearchResultsAndAnswer(BaseModel):
-    """Contenu du fichier produit par answer_dataset.
-    Contient:
-        - search_results -> liste de MinimalAnswer, un par question
-        - k -> nombre de passages gardes pour chaque question"""
+    """Content of the file produced by answer_dataset.
+    Contains:
+        - search_results -> list of MinimalAnswer, one per question
+        - k -> number of passages kept for each question"""
 
     search_results: list[MinimalAnswer]
     k: int

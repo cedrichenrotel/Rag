@@ -12,20 +12,20 @@ from src.model import (
 
 class PathFile:
     def create_json_missing(self, file: Path) -> None:
-        """permet de creer le dossier complet data/processed.
+        """Create all the missing parent folders (e.g. data/processed).
         arg:
-            - file -> fichier cibler"""
+            - file -> target file"""
 
         file.parent.mkdir(parents=True, exist_ok=True)
 
     def save(self, chunks: list[Chunk], path: Path) -> None:
-        """Sauvegarde et convertis en dict(json), les donnees des
-        resultats.
+        """Convert the chunks into dicts and save them as JSON.
         args:
-            - path -> chemin du fichier a creer(ex: data/processed/index.json).
-            S'il existe deja, il est remplace.
-            - data -> stock dans sa liste toutes les info que la class chunk a
-            besoin pour le stocker dans le fichier JSON. flag(index)."""
+            - path -> path of the file to create
+            (e.g. data/processed/index.json).
+            If it already exists, it is replaced.
+            - chunks -> list of chunks with all the information needed
+            to store them in the JSON file (used by index)."""
 
         self.create_json_missing(path)
 
@@ -36,10 +36,10 @@ class PathFile:
             json.dump(data, f)
 
     def load(self, path: Path) -> list[Chunk]:
-        """Permet de retrouver la liste des chunks au moment du 'def save'
-        sans relire ni decouper le corpus (flag -> search).
+        """Get back the list of chunks saved by save, without reading
+        or splitting the corpus again (used by search).
         arg:
-            - path -> fichier cibler"""
+            - path -> target file"""
 
         with open(path, "r") as f:
             data: list[dict[str, Any]] = json.load(f)
@@ -47,9 +47,10 @@ class PathFile:
         return list_chunks
 
     def load_dataset(self, path: Path) -> RagDataset:
-        """Ouvrir dataset_docs_public.json et obtenir un objet RagDataset
+        """Open a dataset file (e.g. dataset_docs_public.json) and get
+        a RagDataset object.
         args:
-            - path -> fichier cibler"""
+            - path -> target file"""
 
         with open(path, "r") as f:
             data: list[dict[str, Any]] = json.load(f)
@@ -57,10 +58,10 @@ class PathFile:
         return dataset
 
     def load_results(self, path: Path) -> StudentSearchResults:
-        """Relit le fichier produit par search_dataset et obtient un
-        objet StudentSearchResults (flag -> evaluate).
+        """Read the file produced by search_dataset and get a
+        StudentSearchResults object (used by evaluate).
         args:
-            - path -> fichier cibler"""
+            - path -> target file"""
 
         with open(path, "r") as f:
             data: dict[str, Any] = json.load(f)
@@ -74,11 +75,13 @@ class PathFile:
         student_results: StudentSearchResults | StudentSearchResultsAndAnswer,
         output_path: Path,
     ) -> None:
-        """Cree un fichier 'dataset_doc_public.json et stock le resultat
+        """Create a JSON file (e.g. dataset_docs_public.json) and store
+        the results in it.
         args:
-            - results -> resultat de search_datset
-            - path -> data/output/search_results/UnansweredQuestions/
-            dataset_docs_public.json"""
+            - student_results -> results of search_dataset or
+            answer_dataset
+            - output_path -> e.g. data/output/search_results/
+            UnansweredQuestions/dataset_docs_public.json"""
 
         self.create_json_missing(output_path)
         with open(output_path, "w") as f:

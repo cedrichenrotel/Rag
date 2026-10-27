@@ -11,12 +11,12 @@ class CutChunk:
         end: int,
         overlap: int = 0,
     ) -> list[Chunk]:
-        """Retourne le texte en une liste de x chunk dont la taille est de
-        max_chunk_size. utilisation de la fonction min() pour recuperer le bon
-        index du dernier caractere.
+        """Split the text into a list of chunks whose size is at most
+        max_chunk_size. min() is used to get the right index of the
+        last character.
 
-        overlap: pourcentage (0-99) de max_chunk_size repris au debut du
-        chunk suivant (ex: 20 avec 2000 -> 400 caracteres en commun)"""
+        overlap: percentage (0-99) of max_chunk_size repeated at the start
+        of the next chunk (e.g. 20 with 2000 -> 400 characters in common)"""
 
         chunks: list[Chunk] = []
         step: int = max(1, max_chunk_size - max_chunk_size * overlap // 100)
@@ -36,16 +36,16 @@ class CutChunk:
         return chunks
 
     def _merge_cuts(self, cuts: list[int], max_chunk_size: int) -> list[int]:
-        """permet de fusionner des chunks trop petit sans depasser
-        max_chunk_size
+        """Merge chunks that are too small without exceeding
+        max_chunk_size.
 
         Args:
-            cuts (list[int]): liste de position d'ou commence chaque chunk
-            max_chunk_size (int): nombre d element max que peux contenir un
-            chunk
+            cuts (list[int]): list of positions where each chunk starts
+            max_chunk_size (int): maximum number of characters a chunk
+            can contain
 
         Returns:
-            list[int]: retourne une nouvelle liste cuts modifier
+            list[int]: a new, modified list of cuts
         """
         merged: list[int] = [cuts[0]]
         for i in range(1, len(cuts) - 1):
@@ -55,8 +55,8 @@ class CutChunk:
         return merged
 
     def _find_line_positions(self, text: str, suffix: str) -> list[int]:
-        """Retourne la position du premier caractere de chaque titre(#)
-        fichier.md ou le prefix(class ou def) d'un fichier.py dans le texte."""
+        """Return the position of the first character of each title (#)
+        in a .md file, or of each prefix (class or def) in a .py file."""
 
         if suffix == ".py":
             prefixes: tuple[str, ...] = ("def ", "class ")
@@ -88,9 +88,9 @@ class CutChunk:
         suffix: str,
         overlap: int = 0,
     ) -> list[Chunk]:
-        """Decoupe un texte en chunks, un par section. Une section
-        commence a un titre '#' (Markdown/texte) ou a un 'def'/'class'(Python),
-        selon le suffixe du fichier."""
+        """Split a text into chunks, one per section. A section
+        starts at a '#' title (Markdown/text) or at a 'def'/'class' (Python),
+        depending on the file suffix."""
 
         cuts: list[int] = self._find_line_positions(text, suffix)
         if not cuts or cuts[0] != 0:

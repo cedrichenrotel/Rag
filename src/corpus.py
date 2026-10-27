@@ -7,18 +7,18 @@ from src.model import Chunk
 
 
 class ChunkCorpus:
-    """Lit le corpus et le decoupe en chunks.
+    """Read the corpus and split it into chunks.
 
-    Recupere les fichiers utiles (.md, .txt, .py), puis fait appel
-    a CutChunk pour decouper chaque texte selon son type de fichier.
+    Collect the useful files (.md, .txt, .py), then call
+    CutChunk to split each text according to its file type.
     """
 
     def list_files(self, raw_path: Path) -> list[Path]:
-        """parcour tous les fichiers du dossier data/raw et creer une
-        liste de chemin de tous les fichiers dont le suffixce termine
-        par: .py, .md, .txt
+        """Walk through all the files of the data/raw folder and build
+        a list of paths of every file whose suffix is
+        .py, .md or .txt.
         args:
-            - raw_path: donnee brute"""
+            - raw_path: raw data folder"""
 
         if not raw_path.is_dir():
             raise ValueError(
@@ -33,19 +33,18 @@ class ChunkCorpus:
         return list_file
 
     def read_file(self, file: Path) -> str:
-        """Retourne le texte d'un fichier, celui dont on lui
-        donne le chemin."""
+        """Return the text of the file at the given path."""
 
         return file.read_text(encoding="utf-8")
 
     def chunk_corpus(
         self, raw_path: Path, max_chunk_size: int, overlap: int = 0
     ) -> list[Chunk]:
-        """retourne une liste de chunk de tous le corpus
+        """Return a list of chunks for the whole corpus.
         args:
-            - raw_patch: donnee brut de base
-            - max_chunk_size: taille max par chunk
-            - overlap: pourcentage de chevauchement entre 2 chunks"""
+            - raw_path: raw data folder
+            - max_chunk_size: maximum size of a chunk
+            - overlap: overlap percentage between 2 chunks"""
 
         path_list: list[Path] = self.list_files(raw_path)
         if not path_list:

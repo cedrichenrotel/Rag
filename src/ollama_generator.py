@@ -7,22 +7,22 @@ from src.qwen_generator import QwenGenerator
 
 
 class OllamaGenerator(QwenGenerator):
-    """permet de generer les reponses comme QwenGenerator via Ollama.
-    On envois le prompt au serveur Ollama au lieu d'utiliser transformers.
-    Ollama est une version compresser de Qwen qui reduit le temp de reponse"""
+    """Generate the answers like QwenGenerator, but through Ollama.
+    The prompt is sent to the Ollama server instead of using transformers.
+    Ollama runs a compressed version of Qwen that reduces response time."""
 
     def __init__(
         self,
         model_name: str = "Qwen/Qwen3-0.6B",
         model_ollama: str = "qwen3:0.6b",
     ) -> None:
-        """Charge les tokanizer pour la preparation d'Ollama
+        """Load the tokenizer used to prepare the prompt for Ollama.
 
         Args:
-            model_name (str, optional): nom du model utiliser pour le
+            model_name (str, optional): name of the model used for the
             tokenizer. Defaults to "Qwen/Qwen3-0.6B".
-            model_ollama (_type_, optional): nom du model cote server Ollama.
-            Defaults to "qwen3:0.6b".
+            model_ollama (str, optional): name of the model on the Ollama
+            server. Defaults to "qwen3:0.6b".
         """
         self.tokenizer: Any = AutoTokenizer.from_pretrained(model_name)
         self.model_ollama: str = model_ollama
@@ -34,21 +34,19 @@ class OllamaGenerator(QwenGenerator):
         max_new_tokens: int = 100,
         max_context_tokens: int = 1000,
     ) -> str:
-        """
-        genere le resultat de answer(reponse generer pqr un model de
-            langage)
+        """Generate the answer (text written by a language model).
 
         Args:
-            question (str): question soumis a Qwen
-            max_new_tokens (int, optional): nombre de token max pour
-            la reponse. Defaults to 100.
-            list_texts (list[str]): textes des chunks trouves par BM25,
-            du plus pertinent au moins pertinent.
-            max_context_tokens (int, optional): nombre maximum de tokens
-            du contexte donne a Qwen. Defaults to 1000.
+            question (str): question given to Qwen
+            max_new_tokens (int, optional): maximum number of tokens for
+            the answer. Defaults to 100.
+            list_texts (list[str]): texts of the chunks found by BM25,
+            from the most relevant to the least relevant.
+            max_context_tokens (int, optional): maximum number of tokens
+            of the context given to Qwen. Defaults to 1000.
 
         Returns:
-            str: retourne la reponse de Qwen sans la question
+            str: Qwen's answer, without the question
         """
 
         context: str = self._build_context(list_texts, max_context_tokens)

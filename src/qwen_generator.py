@@ -5,15 +5,14 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
 
 
 class QwenGenerator:
-    """permet de lire les chunk de bm25 a Qwen et de renvoyer sa reponse
-    dans le fichier answer"""
+    """Give the BM25 chunks to Qwen and return its answer."""
 
     def __init__(self, model_name: str = "Qwen/Qwen3-0.6B") -> None:
-        """charge le model Qwen et son tokenizer pour la generation de texte
-        en une seul fois
+        """Load the Qwen model and its tokenizer once, for text
+        generation.
 
         Args:
-            model_name (str, optional): model de langage. Defaults to
+            model_name (str, optional): language model. Defaults to
             "Qwen/Qwen3-0.6B".
         """
 
@@ -23,24 +22,24 @@ class QwenGenerator:
     def _build_context(
         self, list_text: list[str], max_context_tokens: int = 1000
     ) -> str:
-        """Assemble les textes des chunks en un seul contexte pour Qwen,
-        sans depasser un budget de tokens.
+        """Join the chunk texts into a single context for Qwen,
+        without exceeding a token budget.
 
-        Les textes sont ajoutes dans l'ordre (le meilleur chunk BM25 en
-        premier). Des qu'un texte ferait depasser le budget, on s'arrete :
-        on garde ainsi les chunks les plus pertinents sans les couper.
-        Exception: si le 1er chunk depasse seul le budget, on garde ses
-        max_context_tokens premiers tokens, pour que Qwen ait toujours
-        un contexte.
+        The texts are added in order (the best BM25 chunk first). As soon
+        as a text would exceed the budget, we stop: this keeps the most
+        relevant chunks without cutting them.
+        Exception: if the 1st chunk alone exceeds the budget, we keep its
+        first max_context_tokens tokens, so that Qwen always has
+        a context.
 
         Args:
-            list_text (list[str]): textes des chunks trouves par BM25
-            (chunk.text), du plus pertinent au moins pertinent.
-            max_context_tokens (int): nombre maximum de tokens du contexte.
-            Defaults to 1000.
+            list_text (list[str]): texts of the chunks found by BM25
+            (chunk.text), from the most relevant to the least relevant.
+            max_context_tokens (int): maximum number of tokens of the
+            context. Defaults to 1000.
 
         Returns:
-            str: les textes gardes, separes par une ligne vide.
+            str: the kept texts, separated by an empty line.
         """
 
         conserve_text: list[str] = []
@@ -62,21 +61,19 @@ class QwenGenerator:
         self, question: str, list_texts: list[str], max_new_tokens: int = 100,
         max_context_tokens: int = 1000
     ) -> str:
-        """
-            genere le resultat de answer(reponse generer pqr un model de
-            langage)
+        """Generate the answer (text written by a language model).
 
         Args:
-            question (str): question soumis a Qwen
-            max_new_tokens (int, optional): nombre de token max pour
-            la reponse. Defaults to 100.
-            list_texts (list[str]): textes des chunks trouves par BM25,
-            du plus pertinent au moins pertinent.
-            max_context_tokens (int, optional): nombre maximum de tokens
-            du contexte donne a Qwen. Defaults to 1000.
+            question (str): question given to Qwen
+            max_new_tokens (int, optional): maximum number of tokens for
+            the answer. Defaults to 100.
+            list_texts (list[str]): texts of the chunks found by BM25,
+            from the most relevant to the least relevant.
+            max_context_tokens (int, optional): maximum number of tokens
+            of the context given to Qwen. Defaults to 1000.
 
         Returns:
-            str: retourne la reponse de Qwen sans la question
+            str: Qwen's answer, without the question
         """
 
         context: str = self._build_context(list_texts, max_context_tokens)

@@ -16,11 +16,13 @@ from src.model import (
 from src.qwen_generator import QwenGenerator
 from src.rag_cli_utils import RagCliUtils
 
+DEFAULT_CHUNK_SIZE = 2000
+DEFAULT_OVERLAP = 20
+
 
 class RagCli(RagCliUtils):
-    """class contenant toutes les methodes pour
-    exectuter les commande d'entree que fire
-    transformera"""
+    """Class containing all the methods that Fire
+    turns into CLI commands."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -28,40 +30,43 @@ class RagCli(RagCliUtils):
 
     def index(
         self,
-        max_chunk_size: int = 2000,
+        max_chunk_size: int = DEFAULT_CHUNK_SIZE,
         raw_path: str = "data/raw",
         index_path: str = "data/processed/index.json",
-        overlap: int = 20,
+        overlap: int = DEFAULT_OVERLAP,
     ) -> None:
-        """Decoupe les fichiers en paquet de 2000 caracteres
-        max dans data/raw/vllm-0.10.1 et sauvegarde l'index
-        dans data/processed
+        """Split the files of data/raw/vllm-0.10.1 into chunks of
+        at most 2000 characters and save the index
+        in data/processed.
         args:
-            - max_chunk_size -> taille max chunk
-            - raw_path -> donnee brut
-            - index_path -> fichier stock resultat index
-            - overlap -> pourcentage (0-99) de chevauchement entre 2 chunks"""
+            - max_chunk_size -> maximum size of a chunk
+            - raw_path -> raw data folder
+            - index_path -> file where the index is stored
+            - overlap -> overlap percentage (0-99) between 2 chunks"""
 
         if (
             not isinstance(max_chunk_size, int)
             or isinstance(max_chunk_size, bool)
-            or not 1 <= max_chunk_size <= 2000
+            or not 100 <= max_chunk_size <= 2000
         ):
             print(
-                "[ERROR] index: max_chunk_size must be an int "
-                "between 1 and 2000"
+                "[WARNING] index: Incorrect input value, max_chunk_size must"
+                " be an int between 100 and 2000."
             )
-            return
+            max_chunk_size = DEFAULT_CHUNK_SIZE
+            print(f"Value default: {DEFAULT_CHUNK_SIZE}")
+
         if (
             not isinstance(overlap, int)
             or isinstance(overlap, bool)
             or not 0 <= overlap <= 99
         ):
             print(
-                "[ERROR] index: overlap must be an int between 0 and 99 "
-                f"(got {overlap})"
+                f"[WARNING] index: Incorrect input value: {overlap},"
+                " overlap must be an int between 0 and 99"
             )
-            return
+            overlap = DEFAULT_OVERLAP
+            print(f"Value default: {DEFAULT_OVERLAP}")
 
         try:
             list_chunk: list[Chunk] = self._chunkcorpus.chunk_corpus(
@@ -79,12 +84,11 @@ class RagCli(RagCliUtils):
         k: int = 10,
         index_path: str = "data/processed/index.json",
     ) -> None:
-        """permet de retourner les k meilleurs chunk du
-        classement d'une question.
-            args:
-                - query -> questions posee
-                - k -> nombre de chunk
-                - index_path -> chemin du fichier indexer"""
+        """Display the k best-ranked chunks for a question.
+        args:
+            - query -> question asked
+            - k -> number of chunks
+            - index_path -> path of the index file"""
 
         if not self._check_query(query) or not self._check_k(k):
             return
@@ -104,14 +108,14 @@ class RagCli(RagCliUtils):
         k: int = 10,
         index_path: str = "data/processed/index.json",
     ) -> None:
-        """retourne les k meilleurs chunk d'un fichier de question
-        et l'enregistre dans fichier JSON.
+        """Find the k best chunks for every question of a file
+        and save them in a JSON file.
             args:
-                - dataset_path -> chemin du fichier JSON contenant
-                  les questions
-                - save_directory -> dossier ou est stocker le fichier
-                  resultat de recherche
-                - k -> nombre de chunk a retourner par question"""
+                - dataset_path -> path of the JSON file containing
+                  the questions
+                - save_directory -> folder where the search results
+                  file is stored
+                - k -> number of chunks to return per question"""
 
         if not self._check_k(k):
             return
@@ -153,17 +157,17 @@ class RagCli(RagCliUtils):
         max_new_tokens: int = 100,
         max_context_tokens: int = 1000,
     ) -> None:
-        """Affiche les k meilleurs chunk d'une question et l'envois
-        au model Qwen afin de rediger une reponse en texte.
+        """Display the k best chunks for a question and send them
+        to the Qwen model to write a text answer.
             args:
-                - query -> question posee
-                - k -> nombre de chunk a retourner
-                - index_path -> chemin fichier sont stcker les chunks pour
-                  BM25
-                - max_new_tokens -> Permet de recouper la longhueur maximale
-                  de la reponse ecrite par qwen
-                - max_context_token -> les meilleurs chunks tant que le total
-                  reste sous ce nombre de tokens"""
+                - query -> question asked
+                - k -> number of chunks to return
+                - index_path -> path of the file where the chunks for
+                  BM25 are stored
+                - max_new_tokens -> maximum length of the answer
+                  written by Qwen
+                - max_context_tokens -> keep the best chunks as long as the
+                  total stays under this number of tokens"""
 
         if not self._check_token(
             "max_new_tokens", max_new_tokens
@@ -194,18 +198,18 @@ class RagCli(RagCliUtils):
         max_new_tokens: int = 100,
         max_context_tokens: int = 1000,
     ) -> None:
-        """redige les reponses de toutes les questions d'un fichier et les
-        enregistre dans un fichier JSON (elle lis le fichier produit par
+        """Write the answers to all the questions of a file and
+        save them in a JSON file (it reads the file produced by
         search_dataset).
             args:
-                - student_search_results_path -> chemin du fichier JSON
-                  produit par la fonction search_dataset
-                - save_directory -> dossier ou est stocker le fichier des
-                  reponses
-                - max_new_tokens -> Permet de recouper la longhueur maximale
-                  de la reponse ecrite par qwen
-                - max_context_tokens -> les meilleurs chunks tant que le total
-                  reste sous ce nombre de tokens"""
+                - student_search_results_path -> path of the JSON file
+                  produced by search_dataset
+                - save_directory -> folder where the answers file
+                  is stored
+                - max_new_tokens -> maximum length of the answer
+                  written by Qwen
+                - max_context_tokens -> keep the best chunks as long as the
+                  total stays under this number of tokens"""
 
         if not self._check_token(
             "max_new_tokens", max_new_tokens
@@ -273,15 +277,15 @@ class RagCli(RagCliUtils):
         dataset_path: str,
         k: int = 10,
     ) -> None:
-        """compare les resultats de recherche avec le corriger et creer un
-        pourcentage de reussite.
+        """Compare the search results with the answer key and compute
+        a success rate.
             args:
-                - student_search_results_path -> chemin du fichier JSON
-                  produit par la fonction search_dataset
-                - dataset_path -> chemin du fichier JSON corrige
-                (AnsweredQuestions))
-        retour: une moyenne % de bonne reponse sur la liste de toute les
-        questions"""
+                - student_search_results_path -> path of the JSON file
+                  produced by search_dataset
+                - dataset_path -> path of the answer key JSON file
+                (AnsweredQuestions)
+        returns: the average % of correct answers over all
+        the questions"""
 
         if not self._check_k(k):
             return

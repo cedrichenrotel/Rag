@@ -5,8 +5,8 @@ from src.tokenizer import Tokenizer
 
 
 class Bm25Index:
-    """Permet de donner une note à chaque chunk
-    et garder le mieux noteés"""
+    """Give a score to each chunk
+    and keep the best-scored ones."""
 
     def __init__(self, list_chunks: list[Chunk]) -> None:
         self.list_chunks: list[Chunk] = list_chunks
@@ -14,7 +14,7 @@ class Bm25Index:
         self.bm25: BM25Okapi = BM25Okapi(self._tokenize_text(), k1=1)
 
     def _tokenize_text(self) -> list[list[str]]:
-        """Convertir le chunks.texte et chunks.path en une liste de token"""
+        """Convert chunk.text and chunk.file_path into a list of tokens."""
 
         list_tokens: list[list[str]] = []
         for chunk in self.list_chunks:
@@ -24,10 +24,10 @@ class Bm25Index:
         return list_tokens
 
     def _list_scores(self, query: str) -> list[tuple[float, Chunk]]:
-        """Retourne les paires (note, chunk) triees de la meilleure
-        note a la moins bonne pour la question donnee.
+        """Return the (score, chunk) pairs sorted from the best
+        score to the worst for the given question.
 
-        query: question permettra a bm25 de donner une note au chunk"""
+        query: question used by BM25 to give a score to each chunk"""
 
         query_token: list[str] = self.tokenizer.tokenize(query)
         note: list[float] = self.bm25.get_scores(query_token)
@@ -39,10 +39,10 @@ class Bm25Index:
         return list_scores
 
     def search(self, query: str, k: int) -> list[Chunk]:
-        """retourne  les k meilleurs chunk de la liste des scores
+        """Return the k best chunks from the list of scores.
 
         query: question
-        k: nombre des milleurs chunk a retourner"""
+        k: number of best chunks to return"""
 
         list_scores: list[tuple[float, Chunk]] = self._list_scores(query)
         return [chunk for _, chunk in list_scores[:k]]
