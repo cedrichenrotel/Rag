@@ -2,70 +2,70 @@
 
 # Description
 
-## Pourquoi un RAG ?
+## Why a RAG?
 
-Certains modèles, comme Qwen3-0.6B, sont petits et leurs connaissances sont limitées :
-ils ne connaissent pas ce qui est sorti après leur entraînement. Si on leur pose une
-question précise dont la réponse n'est pas dans leurs données, ils en inventent une :
-c'est une **hallucination**.
+Some models, like Qwen3-0.6B, are small and have limited knowledge:
+they do not know anything released after their training. If you ask them a
+precise question whose answer is not in their data, they make one up:
+this is a **hallucination**.
 
-Le RAG (Retrieval-Augmented Generation) réduit ce phénomène : il permet au modèle de
-répondre à partir de données locales, en lui donnant les passages utiles au moment
-où il répond. Cela se fait en trois étapes.
+RAG (Retrieval-Augmented Generation) reduces this problem: it lets the model
+answer from local data, by giving it the useful passages at the moment
+it answers. This is done in three steps.
 
-## Étape 1 — Tri et stockage des données
+## Step 1 — Sorting and storing the data
 
-- **Pré-tri** : on garde tous les fichiers `.py`, `.md` et `.txt`, qui peuvent contenir
-  des informations utiles pour répondre aux questions.
-- **Découpage (chunks)** : le contenu de chaque fichier est découpé en morceaux de
-  2000 caractères maximum (des *chunks*).
-  - fichiers `.py` : découpe à chaque `def ` et `class ` ;
-  - fichiers `.md` / `.txt` : découpe à chaque titre `#`.
+- **Pre-filtering**: we keep all `.py`, `.md` and `.txt` files, which may contain
+  useful information to answer the questions.
+- **Splitting (chunks)**: the content of each file is split into pieces of
+  at most 2000 characters (*chunks*).
+  - `.py` files: split at each `def ` and `class `;
+  - `.md` / `.txt` files: split at each `#` heading.
 
-  Si un fichier n'a aucun de ces préfixes, il forme une seule section, qui n'est
-  recoupée que si elle dépasse 2000 caractères.
-- **Sauvegarde** : les chunks sont sauvegardés dans `data/processed/index.json`, avec pour chacun :
-  - le chemin du fichier ;
-  - la position du premier et du dernier caractère ;
-  - le texte du passage.
+  If a file has none of these prefixes, it forms a single section, which is
+  only split again if it exceeds 2000 characters.
+- **Saving**: the chunks are saved in `data/processed/index.json`, each with:
+  - the file path;
+  - the position of the first and last character;
+  - the text of the passage.
 
-## Étape 2 — Recherche
+## Step 2 — Search
 
-- **Tokens** : le texte de chaque chunk et la question sont mis en minuscules et découpés
-  en une liste de mots (les *tokens*). Cela permet ensuite de comparer les mots de la
-  question à ceux de chaque chunk.
-- **Index** : on utilise la bibliothèque `rank_bm25` (`BM25Okapi`). Elle reçoit la liste
-  des tokens de chaque chunk, puis, pour une question, donne une note à chaque chunk
-  (`get_scores`). Plus un chunk contient de mots de la question, plus sa note est élevée.
-  Mais tous les mots ne valent pas pareil : un mot rare dans le corpus (ex. `lora`)
-  rapporte beaucoup de points, un mot présent partout (ex. `the`, `self`) presque rien.
-- **Tri** : `list_scores` associe chaque note à son chunk et les trie de la plus haute à
-  la plus basse, puis `search` garde les k premiers.
+- **Tokens**: the text of each chunk and the question are lowercased and split
+  into a list of words (the *tokens*). This makes it possible to compare the words of the
+  question with those of each chunk.
+- **Index**: we use the `rank_bm25` library (`BM25Okapi`). It receives the list
+  of tokens of each chunk, then, for a question, gives a score to each chunk
+  (`get_scores`). The more words of the question a chunk contains, the higher its score.
+  But not all words are worth the same: a word that is rare in the corpus (e.g. `lora`)
+  earns a lot of points, a word found everywhere (e.g. `the`, `self`) almost nothing.
+- **Sorting**: `list_scores` pairs each score with its chunk and sorts them from highest to
+  lowest, then `search` keeps the first k.
 
-## Étape 3 — Génération
+## Step 3 — Generation
 
-Pour répondre au mieux, le modèle de langage a besoin d'une instruction, d'un contexte
-et de la question.
+To give the best answer, the language model needs an instruction, a context
+and the question.
 
-- **Prompt** : une instruction courte et précise pour que le modèle comprenne ce qu'on attend :
-  - répondre à la question de manière concise et précise ;
-  - ne pas inventer la réponse ;
-  - répondre « There is no information in the context to answer the question » si le
-    contexte ne contient pas les informations nécessaires.
-- **Contexte** : les chunks triés par BM25 sont envoyés au modèle en un paquet de
-  1000 tokens maximum (pour limiter le temps de réponse). Si le premier chunk dépasse
-  à lui seul cette limite, il est coupé.
-- **Question** : la question est envoyée à Qwen avec le contexte.
-- **Ollama** : `OllamaGenerator` utilise le même modèle (`qwen3:0.6b`) que `QwenGenerator`,
-  mais via le logiciel Ollama, beaucoup plus rapide (~3 s par question contre ~10 s avec
-  transformers). Ollama utilise une version compressée du modèle (*quantization* : chaque
-  poids est stocké sur moins de bits), qui prend moins de mémoire et se calcule plus vite.
-  Il est utilisé quand on demande au modèle de répondre à un grand nombre de questions
+- **Prompt**: a short and precise instruction so that the model understands what is expected:
+  - answer the question concisely and precisely;
+  - do not make up the answer;
+  - answer "There is no information in the context to answer the question" if the
+    context does not contain the necessary information.
+- **Context**: the chunks sorted by BM25 are sent to the model as a bundle of
+  at most 1000 tokens (to limit the response time). If the first chunk alone exceeds
+  this limit, it is truncated.
+- **Question**: the question is sent to Qwen together with the context.
+- **Ollama**: `OllamaGenerator` uses the same model (`qwen3:0.6b`) as `QwenGenerator`,
+  but through the Ollama software, which is much faster (~3 s per question versus ~10 s with
+  transformers). Ollama uses a compressed version of the model (*quantization*: each
+  weight is stored on fewer bits), which takes less memory and computes faster.
+  It is used when the model is asked to answer a large number of questions
   (`answer_dataset`).
 
 # Instructions
 
-Prérequis : Python ≥ 3.10, uv, Linux.
+Requirements: Python ≥ 3.10, uv, Linux.
 
 ## Installation
 
@@ -73,27 +73,27 @@ Prérequis : Python ≥ 3.10, uv, Linux.
 make install
 ```
 
-Installe les dépendances (`uv sync`), télécharge Ollama dans `~/.local/bin`, lance le
-serveur et télécharge le modèle `qwen3:0.6b`.
+Installs the dependencies (`uv sync`), downloads Ollama into `~/.local/bin`, starts the
+server and downloads the `qwen3:0.6b` model.
 
 ## Ollama
 
 ```bash
-ollama serve   # lance le serveur (déjà fait par make install)
-pkill ollama   # arrête le serveur
+ollama serve   # starts the server (already done by make install)
+pkill ollama   # stops the server
 ```
 
-Si le serveur est arrêté, `answer_dataset` utilise `QwenGenerator` (transformers), plus lent.
+If the server is stopped, `answer_dataset` uses `QwenGenerator` (transformers), which is slower.
 
-## Pipeline (dans l'ordre)
+## Pipeline (in order)
 
-Découpe `data/raw` en chunks et sauvegarde l'index dans `data/processed/index.json` :
+Splits `data/raw` into chunks and saves the index in `data/processed/index.json`:
 
 ```bash
 uv run python -m src index --max_chunk_size 2000
 ```
 
-Cherche les k meilleurs chunks pour chaque question et sauvegarde le résultat en JSON :
+Finds the k best chunks for each question and saves the result as JSON:
 
 ```bash
 uv run python -m src search_dataset \
@@ -101,7 +101,7 @@ uv run python -m src search_dataset \
     --k 10 --save_directory data/output/search_results/UnansweredQuestions
 ```
 
-Génère une réponse pour chaque question à partir des sources trouvées :
+Generates an answer for each question from the retrieved sources:
 
 ```bash
 uv run python -m src answer_dataset \
@@ -109,7 +109,7 @@ uv run python -m src answer_dataset \
     --save_directory data/output/search_results_and_answer/UnansweredQuestions
 ```
 
-Calcule le recall@k (1, 3, 5, 10) :
+Computes the recall@k (1, 3, 5, 10):
 
 ```bash
 uv run python -m src evaluate \
@@ -117,42 +117,42 @@ uv run python -m src evaluate \
     --dataset_path data/datasets/AnsweredQuestions/dataset_docs_public.json --k 10
 ```
 
-## Raccourcis Makefile
+## Makefile shortcuts
 
 - `make index`, `make search_dataset`, `make answer_dataset`, `make evaluate`
-  (`DATASET=code` pour le dataset code, ex. `make evaluate DATASET=code`) ;
-- qualité : `make lint`, `make lint-strict`, `make clean`.
+  (`DATASET=code` for the code dataset, e.g. `make evaluate DATASET=code`);
+- quality: `make lint`, `make lint-strict`, `make clean`.
 
 # Resources
 
-## Références
+## References
 
-- Sujet officiel du projet (`en.subject_RAG.pdf`, v2.0).
-- BM25 : [Okapi BM25 (Wikipedia)](https://en.wikipedia.org/wiki/Okapi_BM25) et la
-  bibliothèque [rank_bm25](https://github.com/dorianbrown/rank_bm25).
+- Official project subject (`en.subject_RAG.pdf`, v2.0).
+- BM25: [Okapi BM25 (Wikipedia)](https://en.wikipedia.org/wiki/Okapi_BM25) and the
+  [rank_bm25](https://github.com/dorianbrown/rank_bm25) library.
 - [Pydantic](https://docs.pydantic.dev/), [Python Fire](https://github.com/google/python-fire),
   [tqdm](https://tqdm.github.io/).
-- Génération : [Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B),
+- Generation: [Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B),
   [transformers](https://huggingface.co/docs/transformers), [Ollama](https://ollama.com/).
 
-## Usage de l'IA
+## AI usage
 
-J'ai utilisé Claude (Anthropic) comme **mentor**, pas comme générateur de code :
+I used Claude (Anthropic) as a **mentor**, not as a code generator:
 
-- **Structurer le projet** : découper le travail en étapes (chunking, index, recherche,
-  génération, robustesse), avec un concept et un test à chaque étape.
-- **Comprendre quand je bloquais** : explication des notions (RAG, BM25, tokens, recall,
-  IoU), et déroulé des valeurs ligne par ligne pour trouver mes erreurs.
-- **Relire mon code** : repérer les cas qui provoquaient un traceback ou des erreurs
-  flake8/mypy, que j'ai ensuite corrigés moi-même.
-- **Mise en forme du README** : correction de l'orthographe, mise en page Markdown et
-  traduction en anglais.
+- **Structuring the project**: splitting the work into steps (chunking, index, search,
+  generation, robustness), with one concept and one test at each step.
+- **Understanding when I was stuck**: explanations of the concepts (RAG, BM25, tokens, recall,
+  IoU), and line-by-line walkthroughs of the values to find my mistakes.
+- **Reviewing my code**: spotting the cases that caused a traceback or flake8/mypy
+  errors, which I then fixed myself.
+- **README formatting**: spelling correction, Markdown layout and
+  translation into English.
 
-Le code a été écrit par moi, et je suis capable d'expliquer et de modifier chaque partie.
+The code was written by me, and I am able to explain and modify every part of it.
 
 # System architecture
 
-## Flux des données
+## Data flow
 
 ```
 data/raw/vllm-0.10.1
@@ -164,186 +164,210 @@ list[Chunk] ──► PathFile.save ──► data/processed/index.json        (
       ▼
 top-k Chunk ──► MinimalSource ──► StudentSearchResults (JSON)       (search / search_dataset)
       │
-      │  _read_source (relit data/raw) + QwenGenerator / OllamaGenerator
+      │  _read_source (re-reads data/raw) + QwenGenerator / OllamaGenerator
       ▼
 MinimalAnswer ──► StudentSearchResultsAndAnswer (JSON)              (answer / answer_dataset)
 ```
 
-## Fichiers de `src/`
+## Files in `src/`
 
-- `__main__.py` : point d'entrée, lance la CLI avec `Fire(RagCli)`.
-- `rag_cli.py` : `RagCli`, les 6 commandes (`index`, `search`, `search_dataset`, `answer`,
+- `__main__.py`: entry point, starts the CLI with `Fire(RagCli)`.
+- `rag_cli.py`: `RagCli`, the 6 commands (`index`, `search`, `search_dataset`, `answer`,
   `answer_dataset`, `evaluate`).
-- `rag_cli_utils.py` : `RagCliUtils`, classe mère de `RagCli` avec les fonctions communes
-  aux commandes (vérification de `query` et `k`, chargement de l'index BM25, choix du
-  générateur, relecture d'une source, affichage).
-- `model.py` : modèles pydantic échangés entre les étapes (`MinimalSource`, `Chunk`,
+- `rag_cli_utils.py`: `RagCliUtils`, parent class of `RagCli` with the functions shared
+  by the commands (checking `query` and `k`, loading the BM25 index, choosing the
+  generator, re-reading a source, display).
+- `model.py`: pydantic models exchanged between the steps (`MinimalSource`, `Chunk`,
   `RagDataset`, `StudentSearchResults`…).
-- `corpus.py` : `ChunkCorpus`, liste les fichiers utiles de `data/raw`, les lit sans
-  modifier le texte et les envoie au découpage.
-- `chunk.py` : `CutChunk`, découpe un fichier en chunks (aux `def `/`class ` pour `.py`,
-  aux `#` pour `.md`/`.txt`, recoupe à `max_chunk_size`).
-- `path.py` : `PathFile`, lecture et écriture des JSON (index, datasets, résultats).
-- `tokenizer.py` : `Tokenizer`, transforme un texte en liste de mots (minuscules,
+- `corpus.py`: `ChunkCorpus`, lists the useful files of `data/raw`, reads them without
+  modifying the text and sends them to the splitting step.
+- `chunk.py`: `CutChunk`, splits a file into chunks (at `def `/`class ` for `.py`,
+  at `#` for `.md`/`.txt`, re-split at `max_chunk_size`).
+- `path.py`: `PathFile`, reading and writing JSON files (index, datasets, results).
+- `tokenizer.py`: `Tokenizer`, turns a text into a list of words (lowercase,
   snake_case, camelCase).
-- `bm25_index.py` : `Bm25Index`, construit BM25 sur les tokens des chunks (+ mots du
-  `file_path`), note et trie les chunks.
-- `qwen_generator.py` : `QwenGenerator`, construit le contexte (1000 tokens max) et génère
-  la réponse avec transformers.
-- `ollama_generator.py` : `OllamaGenerator`, hérite de `QwenGenerator`, génère la réponse
-  via le serveur Ollama (plus rapide).
-- `evaluate.py` : `Evaluator`, calcule le recall@k (IoU entre sources trouvées et sources attendues).
+- `bm25_index.py`: `Bm25Index`, builds BM25 on the chunk tokens (+ words of the
+  `file_path`), scores and sorts the chunks.
+- `qwen_generator.py`: `QwenGenerator`, builds the context (1000 tokens max) and generates
+  the answer with transformers.
+- `ollama_generator.py`: `OllamaGenerator`, inherits from `QwenGenerator`, generates the answer
+  through the Ollama server (faster).
+- `evaluate.py`: `Evaluator`, computes the recall@k (IoU between retrieved sources and expected sources).
 
 # Chunking strategy
 
-## Pourquoi découper ?
+## Why split?
 
-Le but est de renvoyer le passage qui répond à la question, pas toute la source :
+The goal is to return the passage that answers the question, not the whole source:
 
-- **Limite du sujet** : une source de plus de 2000 caractères rend tout le fichier de
-  résultats invalide pour la moulinette.
-- **Score (recall)** : un résultat compte si sa plage de caractères chevauche le passage
-  attendu (IoU ≥ 0.05). Avec un fichier entier, le chevauchement est minuscule par rapport
-  à la taille totale : l'IoU tombe sous 0,05, même si c'est le bon fichier.
-- **Génération** : envoyer toute la source à Qwen rendrait la réponse trop longue à générer
-  et dépasserait la limite de contexte.
+- **Subject limit**: a source longer than 2000 characters makes the whole results
+  file invalid for the moulinette.
+- **Score (recall)**: a result counts if its character range overlaps the expected
+  passage (IoU ≥ 0.05). With a whole file, the overlap is tiny compared to
+  the total size: the IoU drops below 0.05, even if it is the right file.
+- **Generation**: sending the whole source to Qwen would make the answer too long to generate
+  and would exceed the context limit.
 
-## Fichiers Python (`.py`) : découpe aux `def` / `class`
+## Python files (`.py`): split at `def` / `class`
 
-`class` marque le début d'une classe et `def` le début d'une fonction ou méthode.
-Un chunk contient donc en général une fonction entière : une seule idée, ce qui garde
-une cohérence dans les mots de chaque chunk. Le nom de la fonction est dans le chunk, ce
-qui aide BM25 quand la question porte sur une fonction précise.
+`class` marks the start of a class and `def` the start of a function or method.
+So a chunk usually contains a whole function: a single idea, which keeps
+the words of each chunk consistent. The function name is in the chunk, which
+helps BM25 when the question is about a specific function.
 
-## Fichiers Markdown / texte (`.md`, `.txt`) : découpe aux titres `#`
+## Markdown / text files (`.md`, `.txt`): split at `#` headings
 
-Une documentation est structurée par des titres : chaque `#` ouvre une section qui parle
-d'un seul sujet, donc une section = un chunk cohérent.
-Les `#` situés dans un bloc de code ```` ``` ```` sont ignorés : ce sont des commentaires
-(ex. `# install vllm` dans un bloc bash), pas des titres. Couper là séparerait une commande
-de son titre.
+Documentation is structured by headings: each `#` opens a section that deals
+with a single topic, so one section = one consistent chunk.
+The `#` inside a ```` ``` ```` code block are ignored: they are comments
+(e.g. `# install vllm` in a bash block), not headings. Splitting there would separate a command
+from its heading.
 
-## Sections trop longues
+## Sections that are too long
 
-Si une section dépasse `max_chunk_size` (2000 par défaut), elle est recoupée en morceaux de
-taille fixe (`chunk_fixed`). Ex. : une section de 4500 caractères donne 3 chunks de 2000,
-2000 et 500 caractères (`min()` empêche le dernier de dépasser la fin de la section).
+If a section exceeds `max_chunk_size` (2000 by default), it is re-split into
+fixed-size pieces (`_chunk_fixed`), with an overlap between them.
 
-## Texte jamais modifié
+## Overlap
 
-Le texte est lu et découpé sans aucune modification (pas de `strip()`, pas de suppression
-de lignes) : cela garde la bonne position de chaque caractère (`first_character_index`,
-`last_character_index`) dans le fichier source, pour que la moulinette retrouve le bon passage.
+The overlap (`index --overlap`, 20 by default) is a percentage of `max_chunk_size` that is
+repeated from the previous chunk at the start of the next one. It keeps some context
+between two pieces of the same section, which improves the BM25 scoring.
+
+It is computed as follows:
+
+- `max_chunk_size * overlap = x`
+- `x // 100 = overlap size`
+- `max_chunk_size - overlap size = step`
+
+E.g. with `max_chunk_size = 2000` and `overlap = 20`: overlap size = 400, step = 1600.
+A 4500-character section gives 3 chunks: `0-2000`, `1600-3600` and `3200-4500`
+(`min()` prevents the last one from going past the end of the section).
+
+Measured recall@5 (overlap 0 → overlap 20):
+
+- public datasets: docs 81.0 % → 82.0 %, code 71.7 % → 72.7 %;
+- private datasets: docs 79.0 % → 81.0 %, code 63.0 % → 61.0 %.
+
+The overlap brings docs above the 80 % threshold on the private dataset, so it is kept
+(20 by default).
+
+## Text never modified
+
+The text is read and split without any modification (no `strip()`, no line
+removal): this keeps the correct position of each character (`first_character_index`,
+`last_character_index`) in the source file, so that the moulinette finds the right passage.
 
 # Retrieval method
 
-La recherche est lexicale : elle compare les mots de la question aux mots de chaque chunk,
-avec BM25 (`BM25Okapi` de `rank_bm25`), décrit dans la Description.
+The search is lexical: it compares the words of the question with the words of each chunk,
+using BM25 (`BM25Okapi` from `rank_bm25`), described in the Description.
 
-## Tokenisation adaptée au code
+## Tokenization adapted to code
 
-- **snake_case** : `load_lora_adapter` devient `load`, `lora`, `adapter`. Une question est
-  écrite en mots séparés (« How to load a LoRA adapter? ») : sans ce découpage, le chunk
-  n'aurait aucun mot en commun avec elle et aurait 0 point.
-- **camelCase** : `loadLoraAdapter` est coupé de la même façon. La règle
-  `([a-z]{2})([A-Z])` coupe seulement s'il y a au moins 2 minuscules avant la majuscule :
-  `LoRA` reste `lora` au lieu d'être coupé en `lo` et `ra`.
-  Gain mesuré : code 60,6 % → 61,6 %, docs 80,0 % → 82,0 %.
-- **Minuscules** : `LoRA`, `Lora` et `lora` deviennent le même token.
+- **snake_case**: `load_lora_adapter` becomes `load`, `lora`, `adapter`. A question is
+  written in separate words ("How to load a LoRA adapter?"): without this split, the chunk
+  would have no word in common with it and would get 0 points.
+- **camelCase**: `loadLoraAdapter` is split the same way. The rule
+  `([a-z]{2})([A-Z])` only splits if there are at least 2 lowercase letters before the uppercase one:
+  `LoRA` stays `lora` instead of being split into `lo` and `ra`.
+  Measured gain: code 60.6 % → 61.6 %, docs 80.0 % → 82.0 %.
+- **Lowercase**: `LoRA`, `Lora` and `lora` become the same token.
 
-## Mots du chemin du fichier
+## Words from the file path
 
-Les tokens du `file_path` sont ajoutés aux tokens de chaque chunk (`tokenize_text`), car
-le chemin contient souvent des mots clés : une fonction de `vllm/lora/models.py` n'écrit
-pas forcément « lora », mais son chemin le dit. Le texte du chunk, lui, n'est pas modifié.
-C'est le plus gros gain mesuré : code 61,6 % → 68,7 %, docs 82,0 % → 83,0 %.
+The tokens of the `file_path` are added to the tokens of each chunk (`tokenize_text`), because
+the path often contains keywords: a function in `vllm/lora/models.py` does not necessarily
+contain the word "lora", but its path does. The chunk text itself is not modified.
+This is the biggest measured gain: code 61.6 % → 68.7 %, docs 82.0 % → 83.0 %.
 
 # Performance analysis
 
-## Recall@5 (datasets publics)
+## Recall@5
 
-- **Docs** (100 questions) : **83,0 %** (seuil du sujet : 80 %).
-- **Code** (99 questions) : **71,7 %** (seuil du sujet : 50 %).
+- **Docs** (100 questions): **82.0 %** public, **81.0 %** private (subject threshold: 80 %).
+- **Code** (99 / 100 questions): **72.7 %** public, **61.0 %** private (subject threshold: 50 %).
 
-Évolution mesurée à chaque amélioration (une seule à la fois) :
+Progress measured after each improvement (one at a time):
 
-- première version (BM25 + snake_case + camelCase) : code 60,6 %, docs 80,0 % ;
-- règle camelCase `[a-z]{2}` (`LoRA` reste entier) : code 61,6 %, docs 82,0 % ;
-- mots du `file_path` ajoutés aux tokens : code 68,7 %, docs 83,0 % ;
-- BM25 `k1=1` (au lieu de 1,5) : code 71,7 %, docs 83,0 %.
+- first version (BM25 + snake_case + camelCase): code 60.6 %, docs 80.0 %;
+- camelCase rule `[a-z]{2}` (`LoRA` stays whole): code 61.6 %, docs 82.0 %;
+- `file_path` words added to the tokens: code 68.7 %, docs 83.0 %;
+- BM25 `k1=1` (instead of 1.5): code 71.7 %, docs 83.0 %;
+- overlap 20 (see *Overlap*): code 72.7 %, docs 82.0 %.
 
-Essais rejetés :
+Rejected attempts:
 
-- `b=0.5` : code 68,7 % ; `b=0.9` : code 70,7 % (docs inchangée, 83,0 %) ;
-- titre de section ajouté aux tokens de chaque chunk : docs 84,0 % mais code 69,7 %
-  (seulement pour `.md`/`.txt` : docs 83,0 %, code 70,7 %).
+- `b=0.5`: code 68.7 %; `b=0.9`: code 70.7 % (docs unchanged, 83.0 %);
+- section heading added to the tokens of each chunk: docs 84.0 % but code 69.7 %
+  (only for `.md`/`.txt`: docs 83.0 %, code 70.7 %).
 
-## Temps
+## Time
 
-- **Indexation** du corpus entier (1 969 fichiers, 27 103 chunks) : ~2,4 s (limite : 5 min).
-- **Recherche** : 100 questions docs en ~6 s, 99 questions code en ~7 s
-  (limite : 90 s pour 200 questions).
-- **Génération** : ~3 s par question avec Ollama, ~10 s avec transformers (CPU).
+- **Indexing** of the whole corpus (1,969 files, 26,790 chunks): ~3 s (limit: 5 min).
+- **Search**: 100 docs questions in ~11 s, 99 code questions in ~13 s
+  (limit: 90 s for 200 questions).
+- **Generation**: ~3 s per question with Ollama, ~10 s with transformers (CPU).
 
-## Reproduire les mesures
+## Reproducing the measurements
 
 ```bash
-time uv run python -m src index                      # temps d'indexation
-make search_dataset && make evaluate                 # recherche + recall@5 docs
-make search_dataset DATASET=code && make evaluate DATASET=code   # recherche + recall@5 code
+time uv run python -m src index                      # indexing time
+make search_dataset && make evaluate                 # search + docs recall@5
+make search_dataset DATASET=code && make evaluate DATASET=code   # search + code recall@5
 ```
 
 # Design decisions
 
-## BM25 plutôt que TF-IDF
+## BM25 rather than TF-IDF
 
-BM25 limite l'effet des mots répétés et des chunks longs :
+BM25 limits the effect of repeated words and long chunks:
 
-- **Saturation** (paramètre `k1`) : un mot répété 50 fois ne rapporte pas 50 fois plus
-  de points ; après quelques occurrences, le score n'augmente presque plus.
-- **Longueur** (paramètre `b`) : un chunk long contient plus de mots par hasard, donc son
-  score est réduit par rapport à un chunk court.
+- **Saturation** (parameter `k1`): a word repeated 50 times does not earn 50 times more
+  points; after a few occurrences, the score barely increases.
+- **Length** (parameter `b`): a long chunk contains more words by chance, so its
+  score is reduced compared to a short chunk.
 
-## Index sauvegardé en JSON (pas pickle)
+## Index saved as JSON (not pickle)
 
-- **Lisible** : on peut ouvrir `index.json` et vérifier un chunk à la main.
-- **Sûr** : `pickle.load` peut exécuter du code caché dans un fichier, `json.load` ne fait
-  que lire des données.
-- **Simple avec pydantic** : `model_dump` pour sauvegarder, `model_validate` pour recharger
-  et vérifier les données.
+- **Readable**: you can open `index.json` and check a chunk by hand.
+- **Safe**: `pickle.load` can execute code hidden in a file, `json.load` only
+  reads data.
+- **Simple with pydantic**: `model_dump` to save, `model_validate` to reload
+  and validate the data.
 
-## Ollama avec repli sur transformers
+## Ollama with a fallback to transformers
 
-Si le serveur Ollama n'est pas installé ou pas lancé, `_choose_generator` bascule sur
-`QwenGenerator` (transformers) : pas de crash, et une réponse est quand même générée avec
-le même modèle Qwen3-0.6B, juste plus lentement.
+If the Ollama server is not installed or not running, `_choose_generator` switches to
+`QwenGenerator` (transformers): no crash, and an answer is still generated with
+the same Qwen3-0.6B model, just more slowly.
 
-## Ollama seulement dans `answer_dataset`
+## Ollama only in `answer_dataset`
 
-Ollama est surtout utile quand il y a beaucoup de questions : pour 100 questions, ~5 min
-avec Ollama contre ~17 min avec transformers. Pour une seule question (`answer`), l'écart
-est faible.
+Ollama is mostly useful when there are many questions: for 100 questions, ~5 min
+with Ollama versus ~17 min with transformers. For a single question (`answer`), the difference
+is small.
 
-## Erreurs levées dans les modules, attrapées dans la CLI
+## Errors raised in the modules, caught in the CLI
 
-`path.py` et `corpus.py` lèvent les erreurs (`raise`) sans les attraper, car ils ne
-connaissent pas le contexte. C'est `rag_cli.py` qui décide quoi faire selon la commande :
-arrêter (`return`) si le dataset de `search_dataset` est introuvable, ou continuer
-(`continue`) si une source de `answer_dataset` est introuvable.
+`path.py` and `corpus.py` raise errors (`raise`) without catching them, because they do not
+know the context. It is `rag_cli.py` that decides what to do depending on the command:
+stop (`return`) if the dataset of `search_dataset` cannot be found, or continue
+(`continue`) if a source of `answer_dataset` cannot be found.
 
-## `return` plutôt que `sys.exit(1)`
+## `return` rather than `sys.exit(1)`
 
-En cas d'erreur, la commande affiche un message clair puis fait `return`. Le sujet demande
-seulement qu'aucune entrée invalide ne provoque de traceback : `return` suffit et garde le
+On error, the command prints a clear message then does `return`. The subject only
+requires that no invalid input causes a traceback: `return` is enough and keeps the
 code simple.
 
 # Challenges faced
 
-## Construire le prompt de Qwen (`apply_chat_template`)
+## Building the Qwen prompt (`apply_chat_template`)
 
-La partie la plus difficile à comprendre. Qwen a été entraîné sur des conversations dans un
-format précis : `apply_chat_template` transforme la liste `messages` (rôles `system` et
-`user`) en un texte entouré de balises spéciales :
+The hardest part to understand. Qwen was trained on conversations in a
+precise format: `apply_chat_template` turns the `messages` list (`system` and
+`user` roles) into a text surrounded by special tags:
 
 ```
 <|im_start|>system
@@ -356,38 +380,38 @@ Context: ... Question: ...<|im_end|>
 </think>
 ```
 
-- `add_generation_prompt=True` ajoute `<|im_start|>assistant` : c'est au modèle de répondre.
-- `enable_thinking=False` ajoute un bloc `<think>` vide : Qwen3 répond directement, sans
-  long raisonnement.
-- `generate` renvoie le prompt suivi de la réponse : on coupe les `len_prompt` premiers
-  tokens pour garder seulement la réponse.
+- `add_generation_prompt=True` adds `<|im_start|>assistant`: it is the model's turn to answer.
+- `enable_thinking=False` adds an empty `<think>` block: Qwen3 answers directly, without
+  long reasoning.
+- `generate` returns the prompt followed by the answer: we cut the first `len_prompt`
+  tokens to keep only the answer.
 
-## Génération trop lente
+## Generation too slow
 
-Avec transformers sur CPU, une réponse prend ~10 s. Solution : Ollama (version compressée
-du même modèle), ~3 s par question, avec repli sur transformers si Ollama n'est pas lancé.
+With transformers on CPU, an answer takes ~10 s. Solution: Ollama (compressed version
+of the same model), ~3 s per question, with a fallback to transformers if Ollama is not running.
 
-## `LoRA` coupé en deux par la règle camelCase
+## `LoRA` split in two by the camelCase rule
 
-Une règle qui coupe avant chaque majuscule transformait `LoRA` en `lo` + `ra`, qui ne
-correspondaient plus au mot `lora` de la question. Solution : couper seulement après au
-moins 2 minuscules (`[a-z]{2}`).
+A rule that split before every uppercase letter turned `LoRA` into `lo` + `ra`, which no
+longer matched the word `lora` in the question. Solution: split only after at
+least 2 lowercase letters (`[a-z]{2}`).
 
-## `#` dans les blocs de code Markdown
+## `#` in Markdown code blocks
 
-Les commentaires bash (`# install vllm`) dans les blocs ```` ``` ```` étaient pris pour des
-titres et coupaient les sections. Solution : un booléen `code_bloc`, basculé à chaque
-```` ``` ````, qui ignore les `#` à l'intérieur.
+Bash comments (`# install vllm`) in ```` ``` ```` blocks were taken for
+headings and split the sections. Solution: a boolean `code_bloc`, toggled at each
+```` ``` ````, which ignores the `#` inside.
 
-## Barre de progression qui multipliait les recherches
+## Progress bar that multiplied the searches
 
-Premier essai de tqdm dans `search_dataset` : la boucle tqdm était ajoutée au-dessus de la
-boucle existante au lieu de la remplacer, ce qui faisait 100 × 100 recherches. Solution :
-envelopper la boucle des questions existante avec `tqdm(...)`.
+First attempt at tqdm in `search_dataset`: the tqdm loop was added above the
+existing loop instead of replacing it, which made 100 × 100 searches. Solution:
+wrap the existing questions loop with `tqdm(...)`.
 
 # Example usage
 
-## Recherche (`search`)
+## Search (`search`)
 
 ```bash
 uv run python -m src search "How to load a LoRA adapter?" --k 3
@@ -409,13 +433,13 @@ Top 3: data/raw/vllm-0.10.1/vllm/model_executor/model_loader/tensorizer.py
     - Last_character_index: 30571
 ```
 
-## Réponse (`answer`)
+## Answer (`answer`)
 
 ```bash
 uv run python -m src answer "How to load a LoRA adapter?" --k 3
 ```
 
-Affiche le même classement, puis la réponse de Qwen :
+Prints the same ranking, then Qwen's answer:
 
 ```
      __ GENERATE ANSWER __
@@ -424,7 +448,7 @@ Affiche le même classement, puis la réponse de Qwen :
       endpoint with the name and path to the LoRA adapter.
 ```
 
-## Entrées invalides (pas de traceback)
+## Invalid inputs (no traceback)
 
 ```bash
 uv run python -m src search "" --k 3

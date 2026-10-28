@@ -232,6 +232,8 @@ Claude : mets à jour cette section quand une étape est terminée (avec mes sco
 
 | 2026-10-26 | 4 (itération) | Essais **rejetés** : `bm25s` + `bm25s.tokenize` (pas de découpe snake/camelCase, code privé 49 %), découpage fixe des `.md` sans `#`. Pénalité retirée → docs privé 79 % (< 80) → **remise**. **Overlap** ajouté : `index --overlap` (% de `max_chunk_size`, 0-99, **défaut 20**), appliqué dans `_chunk_fixed` (pas = `max - max*overlap//100`), 26 790 chunks, index 2,4 s. Privé (moulinette) : sans pénalité ov 0 = 79/63, ov 10-50 = 81/59-62 ; pénalité ov 0 = 83/68, **pénalité ov 20 = 85/67** (gardé). Datasets publics absents de `data/datasets/` | 67 % privé | 85 % privé |
 
+| 2026-10-28 | 6 (README) | README traduit en anglais. Section **Overlap** ajoutée (calcul + exemple 4500 → `0-2000`, `1600-3600`, `3200-4500`). Pénalité **retirée du code** et pas dans le README (choix : pas constructif pour moi). Mesures du code actuel, recall@5, overlap 0 → 20 : public docs 81 → 82 %, code 71,7 → 72,7 % ; privé docs 79 → **81 %** (moulinette), code 63 → 61 %. Marge docs privé faible (1 question). *Performance analysis* mise à jour (index 3 s, 26 790 chunks, recherche docs 11 s / code 13 s) | 72,7 % (61 % privé) | 82,0 % (81 % privé) |
+
 **Reste étape 5** : rien (vérifier les docstrings à l'étape 6).
 
 **Prochaine étape (où reprendre)** : itérer **une chose à la fois** pour gagner de la marge sur docs

@@ -148,6 +148,11 @@ class RagCli(RagCliUtils):
         except (ValueError, OSError) as e:
             print(f"[ERROR] search_dataset: {save_directory} -> {e}")
             return
+        print()
+        print(
+            f"{len(student_result.search_results)} results saved in"
+            f" {output_path}\n"
+        )
 
     def answer(
         self,
@@ -270,6 +275,11 @@ class RagCli(RagCliUtils):
         except (ValueError, OSError) as e:
             print(f"[ERROR] answer_dataset: {save_directory} -> {e}")
             return
+        print()
+        print(
+            f"{len(student_result.search_results)} answers saved in"
+            f" {output_path}\n"
+        )
 
     def evaluate(
         self,
