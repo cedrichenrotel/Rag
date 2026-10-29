@@ -5,11 +5,12 @@ MAX_CHUNK := 2000
 RAW_PATH := data/raw
 INDEX_PATH := data/processed/index.json
 DATASET := docs
-UNANSWERED := data/datasets/UnansweredQuestions/dataset_$(DATASET)_public.json
-ANSWERED := data/datasets/AnsweredQuestions/dataset_$(DATASET)_public.json
+TYPE_DATASET := private.json
+UNANSWERED := data/datasets/UnansweredQuestions/dataset_$(DATASET)_$(TYPE_DATASET)
+ANSWERED := data/datasets/AnsweredQuestions/dataset_$(DATASET)_$(TYPE_DATASET)
 SEARCH_DIR := data/output/search_results/UnansweredQuestions
 ANSWER_DIR := data/output/search_results_and_answer/UnansweredQuestions
-SEARCH_RESULT := $(SEARCH_DIR)/dataset_$(DATASET)_public.json
+SEARCH_RESULT := $(SEARCH_DIR)/dataset_$(DATASET)_$(TYPE_DATASET)
 K := 10
 
 .PHONY: install run debug clean lint lint-strict index search_dataset evaluate answer_dataset

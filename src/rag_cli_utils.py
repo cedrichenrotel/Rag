@@ -62,8 +62,8 @@ class RagCliUtils:
         """
 
         is_valid: bool = True
-        if not isinstance(k, int) or isinstance(k, bool) or k < 1:
-            print(f"[ERROR] k must be an integer >= 1 (got {k})")
+        if not isinstance(k, int) or isinstance(k, bool) or k < 1 or k > 10:
+            print(f"[ERROR] k must be an integer between 1 and 10 (got {k})")
             is_valid = False
         return is_valid
 
@@ -77,9 +77,17 @@ class RagCliUtils:
         """
 
         try:
-            ollama.list()
+            list_ollama: ollama.ListResponse = ollama.list()
         except ConnectionError as e:
             print(f"[WARNING] Choose_generator: {e} -> activate Qwen default")
+            return QwenGenerator()
+        ollama_model: list[str | None] = [
+            m.model for m in list_ollama.models
+        ]
+
+        if "qwen3:0.6b" not in ollama_model:
+            print("[WARNING] Choose_generator: model qwen3:0.6b not found "
+                  "on Ollama -> activate Qwen default")
             return QwenGenerator()
         return OllamaGenerator()
 

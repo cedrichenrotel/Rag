@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "/home/henrotel/Bureau/Cursus42/rag/vllm-0.10.1"
+    "cmake.sourceDirectory": "/home/henrotel/Bureau/Cursus42/rag/vllm-0.10.1",
+    "python.defaultInterpreterPath": "/goinfre/cehenrot/rag-venv/bin/python"
 }
