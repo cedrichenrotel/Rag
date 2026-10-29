@@ -17,7 +17,7 @@ from src.qwen_generator import QwenGenerator
 from src.rag_cli_utils import RagCliUtils
 
 DEFAULT_CHUNK_SIZE = 2000
-DEFAULT_OVERLAP = 20
+DEFAULT_OVERLAP = 15
 
 
 class RagCli(RagCliUtils):

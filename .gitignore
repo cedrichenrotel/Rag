@@ -5,6 +5,7 @@ __pycache__/
 data/
 moulinette
 en.subject_RAG.pdf
+CLAUDE.md
 
 # C extensions
 *.so

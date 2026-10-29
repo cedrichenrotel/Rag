@@ -33,7 +33,7 @@ class PathFile:
             data: list[dict[str, Any]] = [
                 chunk.model_dump() for chunk in chunks
             ]
-            json.dump(data, f)
+            json.dump(data, f, indent=4)
 
     def load(self, path: Path) -> list[Chunk]:
         """Get back the list of chunks saved by save, without reading
@@ -86,4 +86,4 @@ class PathFile:
         self.create_json_missing(output_path)
         with open(output_path, "w") as f:
             data: dict[str, Any] = student_results.model_dump()
-            json.dump(data, f)
+            json.dump(data, f, indent=4)
